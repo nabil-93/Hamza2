@@ -240,6 +240,13 @@ export function ReportPdf({ form, calc, program, locale }: ReportData) {
   const rtl = locale === "ar";
   const L = getReportLabels(locale);
   const s = makeStyles(rtl);
+  const plans = program.nutrition.plans;
+  // Macros moyennes sur la durée pour le graphe.
+  const macrosMoy = {
+    proteines: Math.round(plans.reduce((a, p) => a + p.macros.proteines, 0) / plans.length),
+    glucides: Math.round(plans.reduce((a, p) => a + p.macros.glucides, 0) / plans.length),
+    lipides: Math.round(plans.reduce((a, p) => a + p.macros.lipides, 0) / plans.length),
+  };
 
   return (
     <Document>
@@ -284,7 +291,7 @@ export function ReportPdf({ form, calc, program, locale }: ReportData) {
               {pdfText(rtl ? "توزيع المغذيات" : "Macronutriments")}
             </Text>
             <MacrosDonut
-              macros={program.nutrition.plan.macros}
+              macros={macrosMoy}
               labels={{
                 p: pdfText(rtl ? "بروتين" : "Prot."),
                 g: pdfText(rtl ? "كربوهيدرات" : "Gluc."),
@@ -303,11 +310,16 @@ export function ReportPdf({ form, calc, program, locale }: ReportData) {
         <Text style={s.h3}>{pdfText(L.nutrition)}</Text>
         <Text style={s.para}>{pdfText(program.analyse.analyseNutritionnelle)}</Text>
 
-        <Text style={s.h1}>{pdfText(`${L.s4} (${program.nutrition.plan.caloriesTotales} kcal)`)}</Text>
-        {program.nutrition.plan.repas.map((r, i) => (
-          <View key={i} wrap={false}>
-            <Text style={s.h3}>{pdfText(`${r.type} - ${r.nom} (${r.calories} kcal)`)}</Text>
-            {r.ingredients.map((ing, j) => <Bullet s={s} key={j}>{ing.nom} : {ing.quantite}</Bullet>)}
+        <Text style={s.h1}>{pdfText(L.s4)}</Text>
+        {plans.map((plan, d) => (
+          <View key={d}>
+            <Text style={s.h3}>{pdfText(`${plan.jour} — ${plan.caloriesTotales} kcal`)}</Text>
+            {plan.repas.map((r, i) => (
+              <View key={i} wrap={false}>
+                <Text style={{ ...s.para, fontWeight: "bold" }}>{pdfText(`${r.type} - ${r.nom} (${r.calories} kcal)`)}</Text>
+                {r.ingredients.map((ing, j) => <Bullet s={s} key={j}>{ing.nom} : {ing.quantite}</Bullet>)}
+              </View>
+            ))}
           </View>
         ))}
 

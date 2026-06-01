@@ -12,6 +12,8 @@ interface Payload {
   form: PatientForm;
   calc: CalculationResult;
   locale: Locale;
+  /** Durée du plan alimentaire en jours (1, 7 ou 14). */
+  duration?: number;
 }
 
 async function postJson<T>(url: string, body: Payload): Promise<T> {

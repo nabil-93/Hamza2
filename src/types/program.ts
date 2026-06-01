@@ -30,11 +30,14 @@ export interface Meal {
 }
 
 export interface DailyMealPlan {
-  jour: string; // ex: "Jour type"
+  jour: string; // ex: "Jour type", "Jour 1", "Lundi"
   repas: Meal[];
   caloriesTotales: number;
   macros: Macros;
 }
+
+/** Durée du programme alimentaire (nombre de jours générés). */
+export type MealPlanDuration = 1 | 7 | 14;
 
 export interface ShoppingItem {
   nom: string;
@@ -47,7 +50,8 @@ export interface ShoppingCategory {
 }
 
 export interface NutritionProgram {
-  plan: DailyMealPlan;
+  /** Un ou plusieurs jours (1 = jour type, 7 = semaine, 14 = deux semaines). */
+  plans: DailyMealPlan[];
   recettes: Recipe[];
   listeCourses: ShoppingCategory[];
   resumeNutritionnel: string;

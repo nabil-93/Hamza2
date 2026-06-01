@@ -150,6 +150,7 @@ export const fr = {
   "result.ingredients": "Ingrédients",
   "result.steps": "Préparation",
   "result.cookTime": "Temps de cuisson",
+  "result.dailyAvg": "moyenne / jour",
   "result.proteines": "Protéines",
   "result.glucides": "Glucides",
   "result.lipides": "Lipides",
@@ -179,6 +180,10 @@ export const fr = {
   "review.subtitle": "Vérifiez les informations et l'analyse automatique avant de générer le programme complet.",
   "generate.intro": "Tout est prêt. L'IA va générer le programme nutritionnel, les recettes, la liste de courses et le programme sportif personnalisés.",
   "generate.done": "Programme généré",
+  "generate.durationTitle": "Durée du programme alimentaire",
+  "generate.dur1": "Jour type",
+  "generate.dur7": "1 semaine (7 jours)",
+  "generate.dur14": "2 semaines (14 jours)",
   "generate.langInfo": "Le programme est généré dans la langue actuelle de l'interface. Vous choisirez la langue du document au moment du téléchargement.",
 } as const;
 

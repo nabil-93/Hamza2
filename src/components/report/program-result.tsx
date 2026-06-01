@@ -40,7 +40,13 @@ export function ProgramResult({ program }: Props) {
 
 function NutritionTab({ program }: Props) {
   const { t } = useI18n();
-  const { plan } = program.nutrition;
+  const plans = program.nutrition.plans;
+  // Macros affichées = moyenne sur tous les jours (1 jour = ce jour-là).
+  const macrosMoy = {
+    proteines: Math.round(plans.reduce((a, p) => a + p.macros.proteines, 0) / plans.length),
+    glucides: Math.round(plans.reduce((a, p) => a + p.macros.glucides, 0) / plans.length),
+    lipides: Math.round(plans.reduce((a, p) => a + p.macros.lipides, 0) / plans.length),
+  };
 
   return (
     <div className="space-y-4">
@@ -49,40 +55,49 @@ function NutritionTab({ program }: Props) {
       </p>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base">{plan.jour}</CardTitle>
-            <Badge variant="success">
-              {plan.caloriesTotales} {t("common.kcal")}
-            </Badge>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {plan.repas.map((repas, i) => (
-              <div key={i} className="rounded-md border border-border p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-semibold text-foreground">
-                    <span className="text-primary">{repas.type}</span> — {repas.nom}
-                  </p>
-                  <Badge variant="neutral">{repas.calories} {t("common.kcal")}</Badge>
-                </div>
-                <ul className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                  {repas.ingredients.map((ing, j) => (
-                    <li key={j} className="flex justify-between gap-2">
-                      <span>{ing.nom}</span>
-                      <span className="font-medium text-foreground">{ing.quantite}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <div className="space-y-4 lg:col-span-2">
+          {plans.map((plan, d) => (
+            <Card key={d}>
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-base">{plan.jour}</CardTitle>
+                <Badge variant="success">
+                  {plan.caloriesTotales} {t("common.kcal")}
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {plan.repas.map((repas, i) => (
+                  <div key={i} className="rounded-md border border-border p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-sm font-semibold text-foreground">
+                        <span className="text-primary">{repas.type}</span> — {repas.nom}
+                      </p>
+                      <Badge variant="neutral">{repas.calories} {t("common.kcal")}</Badge>
+                    </div>
+                    <ul className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                      {repas.ingredients.map((ing, j) => (
+                        <li key={j} className="flex justify-between gap-2">
+                          <span>{ing.nom}</span>
+                          <span className="font-medium text-foreground">{ing.quantite}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">{t("chart.macros")}</CardTitle></CardHeader>
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle className="text-base">
+              {t("chart.macros")}
+              {plans.length > 1 && <span className="text-xs font-normal text-muted-foreground"> ({t("result.dailyAvg")})</span>}
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <MacrosChart
-              macros={plan.macros}
+              macros={macrosMoy}
               labels={{
                 proteines: t("result.proteines"),
                 glucides: t("result.glucides"),

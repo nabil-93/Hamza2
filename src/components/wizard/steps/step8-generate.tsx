@@ -10,11 +10,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ProgramResult } from "@/components/report/program-result";
 import { ExportButtons } from "@/components/report/export-buttons";
 import { generateProgram } from "@/lib/ai/client";
+import { cn } from "@/lib/utils";
 import type { PatientForm } from "@/types";
 
 export function Step8Generate() {
-  const { form, calc, program, setProgram, isGenerating, setIsGenerating, generatedLocale, setGeneratedLocale } =
-    useWizard();
+  const {
+    form, calc, program, setProgram, isGenerating, setIsGenerating,
+    generatedLocale, setGeneratedLocale, mealDuration, setMealDuration,
+  } = useWizard();
   const { t, locale } = useI18n();
   const [error, setError] = React.useState<string | null>(null);
 
@@ -27,6 +30,7 @@ export function Step8Generate() {
         form: form.getValues() as PatientForm,
         calc,
         locale, // langue de l'interface au moment du clic
+        duration: mealDuration,
       });
       setGeneratedLocale(locale);
       setProgram(result);
@@ -70,6 +74,33 @@ export function Step8Generate() {
           <div className="max-w-md">
             <h3 className="text-lg font-semibold text-foreground">{t("step.8")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{t("generate.intro")}</p>
+          </div>
+
+          {/* Durée du programme alimentaire */}
+          <div className="w-full max-w-md rounded-lg border border-border bg-muted/30 p-4 text-start">
+            <p className="mb-3 text-sm font-semibold text-foreground">{t("generate.durationTitle")}</p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: 1, label: t("generate.dur1") },
+                { value: 7, label: t("generate.dur7") },
+                { value: 14, label: t("generate.dur14") },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={isGenerating}
+                  onClick={() => setMealDuration(opt.value)}
+                  className={cn(
+                    "rounded-md border px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-50",
+                    mealDuration === opt.value
+                      ? "border-primary bg-primary-50 text-primary-700 ring-1 ring-primary"
+                      : "border-border bg-white hover:border-primary/40 hover:bg-muted",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <p className="rounded-md bg-primary-50 px-4 py-2 text-xs text-primary-700">

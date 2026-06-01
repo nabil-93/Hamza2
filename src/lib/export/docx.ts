@@ -217,12 +217,14 @@ export async function buildDocx({ form, calc, program, locale }: ReportData): Pr
   children.push(p(`${L.nutrition} : ${program.analyse.analyseNutritionnelle}`));
   children.push(p(`${L.activity} : ${program.analyse.analyseActivite}`));
 
-  // 4. Programme alimentaire
+  // 4. Programme alimentaire (un ou plusieurs jours)
   children.push(h(L.s4, HeadingLevel.HEADING_1));
-  children.push(p(`${L.totalCalories} : ${program.nutrition.plan.caloriesTotales} kcal`));
-  program.nutrition.plan.repas.forEach((r) => {
-    children.push(h(`${r.type} — ${r.nom} (${r.calories} kcal)`, HeadingLevel.HEADING_3));
-    r.ingredients.forEach((ing) => children.push(bullet(`${ing.nom} : ${ing.quantite}`)));
+  program.nutrition.plans.forEach((plan) => {
+    children.push(h(`${plan.jour} — ${plan.caloriesTotales} kcal`, HeadingLevel.HEADING_2));
+    plan.repas.forEach((r) => {
+      children.push(h(`${r.type} — ${r.nom} (${r.calories} kcal)`, HeadingLevel.HEADING_3));
+      r.ingredients.forEach((ing) => children.push(bullet(`${ing.nom} : ${ing.quantite}`)));
+    });
   });
 
   // 5. Recettes

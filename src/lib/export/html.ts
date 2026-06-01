@@ -86,7 +86,7 @@ export function buildHtml({ form, calc, program, locale }: ReportData): string {
       <div style="font-size:22px;font-weight:700;margin-top:6px">${esc(value)}</div>
     </div>`;
 
-  const meal = (m: GeneratedProgram["nutrition"]["plan"]["repas"][number]) =>
+  const meal = (m: GeneratedProgram["nutrition"]["plans"][number]["repas"][number]) =>
     `<div style="border:1px solid ${C.border};border-radius:8px;padding:12px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <strong><span style="color:${C.primary}">${esc(m.type)}</span> — ${esc(m.nom)}</strong>
@@ -95,7 +95,7 @@ export function buildHtml({ form, calc, program, locale }: ReportData): string {
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         ${m.ingredients
           .map(
-            (i) =>
+            (i: { nom: string; quantite: string }) =>
               `<tr><td style="padding:3px 0;color:${C.muted}">${esc(i.nom)}</td><td style="padding:3px 0;text-align:${rtl ? "left" : "right"};font-weight:600">${esc(i.quantite)}</td></tr>`,
           )
           .join("")}
@@ -136,7 +136,13 @@ export function buildHtml({ form, calc, program, locale }: ReportData): string {
     </div>`;
 
   const a = program.analyse;
-  const macros = program.nutrition.plan.macros;
+  const plans = program.nutrition.plans;
+  // Macros moyennes sur la durée pour le graphe.
+  const macros = {
+    proteines: Math.round(plans.reduce((s, p) => s + p.macros.proteines, 0) / plans.length),
+    glucides: Math.round(plans.reduce((s, p) => s + p.macros.glucides, 0) / plans.length),
+    lipides: Math.round(plans.reduce((s, p) => s + p.macros.lipides, 0) / plans.length),
+  };
 
   return `<!DOCTYPE html>
 <html lang="${locale}" dir="${dir}">
@@ -206,8 +212,13 @@ export function buildHtml({ form, calc, program, locale }: ReportData): string {
       <div class="card"><strong>${esc(L.activity)}</strong><p style="margin:6px 0 0;color:${C.muted}">${esc(a.analyseActivite)}</p></div>
     </div>
 
-    <h2>${esc(L.s4)} — ${program.nutrition.plan.caloriesTotales} kcal</h2>
-    ${program.nutrition.plan.repas.map(meal).join("")}
+    <h2>${esc(L.s4)}</h2>
+    ${plans
+      .map(
+        (plan) => `<h3 style="color:${C.secondary};margin-top:16px">${esc(plan.jour)} — ${plan.caloriesTotales} kcal</h3>
+    ${plan.repas.map(meal).join("")}`,
+      )
+      .join("")}
 
     <h2>${esc(L.s5)}</h2>
     ${program.nutrition.recettes.map(recipe).join("")}

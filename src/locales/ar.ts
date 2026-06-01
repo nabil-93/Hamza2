@@ -152,6 +152,7 @@ export const ar: Record<TranslationKey, string> = {
   "result.ingredients": "المكونات",
   "result.steps": "طريقة التحضير",
   "result.cookTime": "مدة الطهي",
+  "result.dailyAvg": "متوسط / يوم",
   "result.proteines": "بروتينات",
   "result.glucides": "كربوهيدرات",
   "result.lipides": "دهون",
@@ -181,5 +182,9 @@ export const ar: Record<TranslationKey, string> = {
   "review.subtitle": "تحقق من المعلومات والتحليل الآلي قبل توليد البرنامج الكامل.",
   "generate.intro": "كل شيء جاهز. سيقوم الذكاء الاصطناعي بتوليد برنامج التغذية والوصفات ولائحة المشتريات والبرنامج الرياضي المخصص.",
   "generate.done": "تم توليد البرنامج",
+  "generate.durationTitle": "مدة البرنامج الغذائي",
+  "generate.dur1": "يوم نموذجي",
+  "generate.dur7": "أسبوع (7 أيام)",
+  "generate.dur14": "أسبوعان (14 يومًا)",
   "generate.langInfo": "يُولَّد البرنامج بلغة الواجهة الحالية. ستختار لغة المستند عند التحميل.",
 };

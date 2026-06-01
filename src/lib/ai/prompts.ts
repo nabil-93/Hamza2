@@ -120,38 +120,55 @@ export function buildNutritionPrompt(
   form: PatientForm,
   calc: CalculationResult,
   locale: Locale,
+  duration: number = 1,
 ): string {
   const repasStruct = form.modeRamadan
     ? `"type" parmi : "Ftour", "Collation après Tarawih", "Shour"`
     : `"type" parmi : "Petit-déjeuner", "Collation matin", "Déjeuner", "Collation après-midi", "Dîner"`;
 
+  const dureeTexte =
+    duration === 1
+      ? "un programme alimentaire d'UN jour type"
+      : duration === 7
+        ? "un programme alimentaire pour UNE SEMAINE (7 jours), avec des repas VARIÉS et différents chaque jour"
+        : "un programme alimentaire pour DEUX SEMAINES (14 jours), avec des repas VARIÉS et différents chaque jour";
+
+  const jourLabel =
+    duration === 1
+      ? `"jour": "Jour type"`
+      : `"jour": "Jour 1", "Jour 2", … jusqu'à "Jour ${duration}"`;
+
   return `${listProfile(form, calc, locale)}
 
-TÂCHE : Génère un programme alimentaire journalier complet (~${calc.caloriesObjectif} kcal), des recettes détaillées et une liste de courses hebdomadaire regroupée par catégorie.
+TÂCHE : Génère ${dureeTexte} (~${calc.caloriesObjectif} kcal par jour), des recettes détaillées et UNE liste de courses regroupée par catégorie couvrant TOUTE la durée (${duration} jour(s)).
 
 CONTRAINTES ISSUES DU RÉFÉRENTIEL EMC (à respecter impérativement) :
 - BASE OBLIGATOIRE : régime MÉDITERRANÉEN (huile d'olive, légumes, légumineuses, céréales complètes, poisson plusieurs fois/semaine, peu de viande rouge), exprimé en cuisine marocaine saine.
-- Répartition des macros sur la journée : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 % de ${calc.caloriesObjectif} kcal. Calcule les grammes en conséquence.
+- Répartition des macros CHAQUE jour : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 % de ${calc.caloriesObjectif} kcal. Calcule les grammes en conséquence.
 - Déjeuner et dîner doivent suivre la structure du repas « vertueux » : crudités/potage + viande(100-120g) ou poisson(150-200g) ou œuf + légumes verts à volonté + 1 portion de féculents + 1 tranche de pain + 1 produit laitier (yaourt/fromage).
 - Au moins 5 portions de fruits/légumes sur la journée, féculents complets, 3 produits laitiers, poisson présent dans la semaine.
-- Huile d'olive/colza pour les matières grasses, sel limité, eau à volonté, sucres simples limités.${form.objectif === "perte_poids" ? "\n- Profil en perte de poids : régime hypocalorique MODÉRÉ (~700 kcal/repas femme, ~830 kcal/repas homme), jamais agressif." : ""}
+- Huile d'olive/colza pour les matières grasses, sel limité, eau à volonté, sucres simples limités.${form.objectif === "perte_poids" ? "\n- Profil en perte de poids : régime hypocalorique MODÉRÉ (~700 kcal/repas femme, ~830 kcal/repas homme), jamais agressif." : ""}${duration > 1 ? `\n- VARIÉTÉ OBLIGATOIRE : ne répète pas les mêmes plats d'un jour à l'autre ; alterne poisson, légumineuses, volaille, œufs et varie les légumes et féculents sur les ${duration} jours.` : ""}
+
+La liste de courses doit ADDITIONNER les quantités de TOUS les jours (total pour ${duration} jour(s)).
 
 Réponds STRICTEMENT avec ce JSON :
 {
   "resumeNutritionnel": "string (2-3 phrases)",
-  "plan": {
-    "jour": "Jour type",
-    "caloriesTotales": number,
-    "macros": { "proteines": number, "glucides": number, "lipides": number },
-    "repas": [
-      {
-        "type": "string (${repasStruct})",
-        "nom": "string",
-        "calories": number,
-        "ingredients": [ { "nom": "string", "quantite": "string (ex: 120 g)" } ]
-      }
-    ]
-  },
+  "plans": [
+    {
+      ${jourLabel},
+      "caloriesTotales": number,
+      "macros": { "proteines": number, "glucides": number, "lipides": number },
+      "repas": [
+        {
+          "type": "string (${repasStruct})",
+          "nom": "string",
+          "calories": number,
+          "ingredients": [ { "nom": "string", "quantite": "string (ex: 120 g)" } ]
+        }
+      ]
+    }
+  ],
   "recettes": [
     {
       "nom": "string",
@@ -167,7 +184,7 @@ Réponds STRICTEMENT avec ce JSON :
   ]
 }
 
-Donne 3 à 4 recettes détaillées issues de la cuisine marocaine saine. Quantités exactes en grammes.`;
+Le tableau "plans" DOIT contenir exactement ${duration} élément(s). Donne aussi 3 à 4 recettes détaillées issues de la cuisine marocaine saine, avec quantités exactes en grammes.`;
 }
 
 export function buildSportPrompt(

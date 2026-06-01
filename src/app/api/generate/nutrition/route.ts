@@ -10,12 +10,14 @@ interface Body {
   form: PatientForm;
   calc: CalculationResult;
   locale: Locale;
+  duration?: number;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { form, calc, locale } = (await req.json()) as Body;
-    const prompt = buildNutritionPrompt(form, calc, locale);
+    const { form, calc, locale, duration } = (await req.json()) as Body;
+    const days = duration === 7 || duration === 14 ? duration : 1;
+    const prompt = buildNutritionPrompt(form, calc, locale, days);
     const data = await generateJson<NutritionProgram>(prompt);
     return NextResponse.json(data);
   } catch (err) {

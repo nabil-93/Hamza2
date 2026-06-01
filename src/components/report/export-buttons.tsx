@@ -26,7 +26,7 @@ export function ExportButtons({ form, calc, program, generatedLocale }: Props) {
 
   // Clé stable du programme pour le cache de traduction.
   const cacheKey = React.useMemo(
-    () => `${form.nom}|${form.prenom}|${generatedLocale}|${program.nutrition.plan.caloriesTotales}`,
+    () => `${form.nom}|${form.prenom}|${generatedLocale}|${program.nutrition.plans.length}|${program.nutrition.plans[0]?.caloriesTotales}`,
     [form.nom, form.prenom, generatedLocale, program],
   );
 

@@ -24,6 +24,9 @@ interface WizardContextValue {
   /** Langue dans laquelle le programme a réellement été généré (= UI au moment du clic). */
   generatedLocale: Locale;
   setGeneratedLocale: (l: Locale) => void;
+  /** Durée du plan alimentaire à générer : 1 (jour type), 7 ou 14 jours. */
+  mealDuration: number;
+  setMealDuration: (d: number) => void;
 }
 
 const WizardContext = createContext<WizardContextValue | null>(null);
@@ -66,6 +69,8 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   const [isGenerating, setIsGenerating] = useState(false);
   // Langue effective de génération (figée au moment du clic « Générer »).
   const [generatedLocale, setGeneratedLocale] = useState<Locale>(locale);
+  // Durée du plan alimentaire (jours) : 1 par défaut.
+  const [mealDuration, setMealDuration] = useState<number>(1);
 
   const setStep = (s: number) => setStepState(Math.min(TOTAL_STEPS, Math.max(1, s)));
 
@@ -95,9 +100,11 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
       setIsGenerating,
       generatedLocale,
       setGeneratedLocale,
+      mealDuration,
+      setMealDuration,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [form, step, calc, program, isGenerating, generatedLocale],
+    [form, step, calc, program, isGenerating, generatedLocale, mealDuration],
   );
 
   return <WizardContext.Provider value={value}>{children}</WizardContext.Provider>;
