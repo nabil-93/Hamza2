@@ -1,5 +1,6 @@
 import type { PatientForm, CalculationResult, GeneratedProgram, Locale, Macros } from "@/types";
 import { getReportLabels } from "./labels";
+import { macroPercents } from "@/lib/utils";
 
 const C = { primary: "#0F4C81", secondary: "#2E8B57", amber: "#F59E0B", muted: "#64748B", border: "#E5E7EB", bg: "#F8FAFC" };
 
@@ -32,13 +33,15 @@ function macrosDonut(m: Macros, labels: { p: string; g: string; l: string }): st
       return el;
     })
     .join("");
+  const pct = macroPercents(m);
+  const pctMap = [pct.proteines, pct.glucides, pct.lipides];
   const legend = segs
     .map(
-      (s) =>
-        `<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;margin:0 8px"><span style="width:10px;height:10px;border-radius:50%;background:${s.color};display:inline-block"></span>${esc(s.label)} ${s.v}g</span>`,
+      (s, i) =>
+        `<div style="display:flex;justify-content:space-between;font-size:12px;margin:2px 0"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:${s.color};display:inline-block"></span>${esc(s.label)}</span><span style="font-weight:600">${s.v} g · ${pctMap[i]} %</span></div>`,
     )
     .join("");
-  return `<div style="text-align:center"><svg width="160" height="160" viewBox="0 0 160 160">${circles}</svg><div style="margin-top:8px">${legend}</div></div>`;
+  return `<div style="text-align:center"><svg width="160" height="160" viewBox="0 0 160 160">${circles}</svg><div style="margin-top:8px;text-align:left">${legend}<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;border-top:1px solid ${C.border};padding-top:4px;margin-top:4px"><span>Total</span><span>${pct.kcal} kcal</span></div></div></div>`;
 }
 
 /** Barres SVG de la projection de poids. */

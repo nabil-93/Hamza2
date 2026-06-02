@@ -13,6 +13,7 @@ import {
 } from "@react-pdf/renderer";
 import type { PatientForm, CalculationResult, GeneratedProgram, Locale, Macros } from "@/types";
 import { getReportLabels, type ReportLabels } from "./labels";
+import { macroPercents } from "@/lib/utils";
 
 const C = { primary: "#0F4C81", secondary: "#2E8B57", amber: "#F59E0B", muted: "#64748B", border: "#E5E7EB", bg: "#F8FAFC" };
 
@@ -174,17 +175,17 @@ function Bullet({ children, s }: { children: React.ReactNode; s: Styles }) {
  * dans cette version de @react-pdf lors du calcul de mise en page.
  */
 function MacrosDonut({ macros, labels }: { macros: Macros; labels: { p: string; g: string; l: string } }) {
-  const total = Math.max(1, macros.proteines + macros.glucides + macros.lipides);
+  const pct = macroPercents(macros);
   const segs = [
-    { v: macros.proteines, color: C.primary, label: labels.p },
-    { v: macros.glucides, color: C.secondary, label: labels.g },
-    { v: macros.lipides, color: C.amber, label: labels.l },
+    { v: macros.proteines, p: pct.proteines, color: C.primary, label: labels.p },
+    { v: macros.glucides, p: pct.glucides, color: C.secondary, label: labels.g },
+    { v: macros.lipides, p: pct.lipides, color: C.amber, label: labels.l },
   ];
   return (
     <View style={{ width: 180 }}>
       <View style={{ flexDirection: "row", height: 18, borderRadius: 4, overflow: "hidden" }}>
         {segs.map((seg, i) => (
-          <View key={i} style={{ width: `${(seg.v / total) * 100}%`, backgroundColor: seg.color }} />
+          <View key={i} style={{ width: `${seg.p}%`, backgroundColor: seg.color }} />
         ))}
       </View>
       <View style={{ marginTop: 6 }}>
@@ -194,9 +195,13 @@ function MacrosDonut({ macros, labels }: { macros: Macros; labels: { p: string; 
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: seg.color, marginRight: 4 }} />
               <Text style={{ fontSize: 9 }}>{pdfText(seg.label)}</Text>
             </View>
-            <Text style={{ fontSize: 9, fontWeight: "bold" }}>{seg.v} g</Text>
+            <Text style={{ fontSize: 9, fontWeight: "bold" }}>{seg.v} g · {seg.p} %</Text>
           </View>
         ))}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 2, borderTop: `0.5px solid ${C.border}`, paddingTop: 2 }}>
+          <Text style={{ fontSize: 9, fontWeight: "bold" }}>Total</Text>
+          <Text style={{ fontSize: 9, fontWeight: "bold" }}>{pct.kcal} kcal</Text>
+        </View>
       </View>
     </View>
   );

@@ -19,6 +19,7 @@ import type {
   Locale,
 } from "@/types";
 import { getReportLabels } from "./labels";
+import { macroPercents } from "@/lib/utils";
 
 /**
  * Convertit une data-URL image (PNG/JPEG) en octets pour docx.
@@ -221,6 +222,12 @@ export async function buildDocx({ form, calc, program, locale }: ReportData): Pr
   children.push(h(L.s4, HeadingLevel.HEADING_1));
   program.nutrition.plans.forEach((plan) => {
     children.push(h(`${plan.jour} — ${plan.caloriesTotales} kcal`, HeadingLevel.HEADING_2));
+    const mp = macroPercents(plan.macros);
+    children.push(
+      p(
+        `Macros : Protéines ${plan.macros.proteines} g (${mp.proteines} %) · Glucides ${plan.macros.glucides} g (${mp.glucides} %) · Lipides ${plan.macros.lipides} g (${mp.lipides} %)`,
+      ),
+    );
     plan.repas.forEach((r) => {
       children.push(h(`${r.type} — ${r.nom} (${r.calories} kcal)`, HeadingLevel.HEADING_3));
       r.ingredients.forEach((ing) => children.push(bullet(`${ing.nom} : ${ing.quantite}`)));
