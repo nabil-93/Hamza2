@@ -14,6 +14,7 @@ import {
 import type { PatientForm, CalculationResult, GeneratedProgram, Locale, Macros } from "@/types";
 import { getReportLabels, type ReportLabels } from "./labels";
 import { macroPercents } from "@/lib/utils";
+import { resolveSections, defaultSections, type SectionKey } from "./sections";
 
 const C = { primary: "#0F4C81", secondary: "#2E8B57", amber: "#F59E0B", muted: "#64748B", border: "#E5E7EB", bg: "#F8FAFC" };
 
@@ -137,6 +138,8 @@ interface ReportData {
   calc: CalculationResult;
   program: GeneratedProgram;
   locale: Locale;
+  /** Sections à inclure (toutes par défaut). */
+  sections?: Record<SectionKey, boolean>;
 }
 
 type Styles = ReturnType<typeof makeStyles>;
@@ -241,21 +244,35 @@ function Footer({ form, L, s }: { form: PatientForm; L: ReportLabels; s: Styles 
   );
 }
 
-export function ReportPdf({ form, calc, program, locale }: ReportData) {
+export function ReportPdf({ form, calc, program, locale, sections }: ReportData) {
   const rtl = locale === "ar";
   const L = getReportLabels(locale);
   const s = makeStyles(rtl);
   const plans = program.nutrition.plans;
-  // Macros moyennes sur la durée pour le graphe.
   const macrosMoy = {
     proteines: Math.round(plans.reduce((a, p) => a + p.macros.proteines, 0) / plans.length),
     glucides: Math.round(plans.reduce((a, p) => a + p.macros.glucides, 0) / plans.length),
     lipides: Math.round(plans.reduce((a, p) => a + p.macros.lipides, 0) / plans.length),
   };
 
+  // Sections actives + numérotation continue.
+  const active = resolveSections(sections ?? defaultSections(), locale);
+  const numOf = (key: SectionKey) => active.find((sec) => sec.key === key)?.num;
+  const titleOf = (key: SectionKey) => active.find((sec) => sec.key === key)?.title ?? "";
+  const show = (key: SectionKey) => numOf(key) !== undefined;
+  // Le contenu démarre-t-il par un saut de page ? La 1re section data n'a pas de `break`.
+  let firstContent = true;
+  const breakBefore = () => {
+    if (firstContent) {
+      firstContent = false;
+      return false;
+    }
+    return true;
+  };
+
   return (
     <Document>
-      {/* Cover */}
+      {/* Cover + table des matières */}
       <Page size="A4" style={s.page}>
         <View style={s.cover}>
           {safeImageSrc(form.branding.logo) && <Image src={safeImageSrc(form.branding.logo)!} style={s.logo} />}
@@ -263,117 +280,161 @@ export function ReportPdf({ form, calc, program, locale }: ReportData) {
           <Text style={s.coverTitle}>{pdfText(L.coverTitle)}</Text>
           <Text style={s.coverName}>{pdfText(`${form.prenom} ${form.nom}`)}</Text>
           <Text style={{ color: C.muted, marginTop: 4, textAlign: "center" }}>{pdfText(`${calc.age} ${L.years} - ${L.bmi} ${calc.imc}`)}</Text>
+
+          {/* Sommaire dynamique */}
+          <View style={{ marginTop: 24, width: "70%" }}>
+            <Text style={{ fontSize: 11, fontWeight: "bold", color: C.primary, marginBottom: 6, textAlign: rtl ? "right" : "left" }}>
+              {pdfText(rtl ? "المحتويات" : "Sommaire")}
+            </Text>
+            {active.map((sec) => (
+              <Text key={sec.key} style={{ fontSize: 10, color: C.muted, marginBottom: 3, textAlign: rtl ? "right" : "left" }}>
+                {pdfText(sec.title)}
+              </Text>
+            ))}
+          </View>
         </View>
         <Footer form={form} L={L} s={s} />
       </Page>
 
       {/* Content */}
       <Page size="A4" style={s.page} wrap>
-        <Text style={s.h1}>{pdfText(L.s1)}</Text>
-        <KV s={s} k={L.fullName} v={`${form.prenom} ${form.nom}`} />
-        <KV s={s} k={L.age} v={`${calc.age} ${L.years}`} />
-        <KV s={s} k={L.sex} v={form.sexe} />
-        <KV s={s} k={L.height} v={`${form.taille} cm`} />
-        <KV s={s} k={L.weightCurrentTarget} v={`${form.poidsActuel} kg -> ${form.poidsCible} kg`} />
-
-        <Text style={s.h1}>{pdfText(L.s2)}</Text>
-        <KV s={s} k={L.bmi} v={`${calc.imc} (${calc.imcCategorie})`} />
-        <KV s={s} k={L.bmr} v={`${calc.bmr} kcal`} />
-        <KV s={s} k={L.tdee} v={`${calc.tdee} kcal`} />
-        <KV s={s} k={L.targetCalories} v={`${calc.caloriesObjectif} kcal`} />
-        <KV s={s} k={L.hydration} v={`${calc.besoinHydrique} L`} />
-
-        {/* Graphiques : projection de poids + macronutriments */}
-        <View style={{ flexDirection: rtl ? "row-reverse" : "row", justifyContent: "space-around", marginTop: 12 }} wrap={false}>
-          <View style={{ alignItems: "center" }}>
-            <Text style={{ fontSize: 9, color: C.muted, marginBottom: 4 }}>
-              {pdfText(rtl ? "توقع الوزن (كغ)" : "Projection de poids (kg)")}
-            </Text>
-            <ProjectionBars points={calc.projection} actuel={pdfText(rtl ? "الآن" : "Act.")} />
+        {show("patient") && (
+          <View>
+            <Text style={s.h1} break={breakBefore()}>{pdfText(titleOf("patient"))}</Text>
+            <KV s={s} k={L.fullName} v={`${form.prenom} ${form.nom}`} />
+            <KV s={s} k={L.age} v={`${calc.age} ${L.years}`} />
+            <KV s={s} k={L.sex} v={form.sexe} />
+            <KV s={s} k={L.height} v={`${form.taille} cm`} />
+            <KV s={s} k={L.weightCurrentTarget} v={`${form.poidsActuel} kg -> ${form.poidsCible} kg`} />
           </View>
-          <View style={{ alignItems: "center" }}>
-            <Text style={{ fontSize: 9, color: C.muted, marginBottom: 4 }}>
-              {pdfText(rtl ? "توزيع المغذيات" : "Macronutriments")}
-            </Text>
-            <MacrosDonut
-              macros={macrosMoy}
-              labels={{
-                p: pdfText(rtl ? "بروتين" : "Prot."),
-                g: pdfText(rtl ? "كربوهيدرات" : "Gluc."),
-                l: pdfText(rtl ? "دهون" : "Lip."),
-              }}
-            />
-          </View>
-        </View>
+        )}
 
-        <Text style={s.h1}>{pdfText(L.s3)}</Text>
-        <Text style={s.para}>{pdfText(program.analyse.resumeProfil)}</Text>
-        <Text style={s.h3}>{pdfText(L.weightRisks)}</Text>
-        <Text style={s.para}>{pdfText(program.analyse.risquesPoids)}</Text>
-        <Text style={s.h3}>{pdfText(L.diabetes)}</Text>
-        <Text style={s.para}>{pdfText(program.analyse.analyseDiabete)}</Text>
-        <Text style={s.h3}>{pdfText(L.nutrition)}</Text>
-        <Text style={s.para}>{pdfText(program.analyse.analyseNutritionnelle)}</Text>
-
-        <Text style={s.h1}>{pdfText(L.s4)}</Text>
-        {plans.map((plan, d) => (
-          <View key={d}>
-            <Text style={s.h3}>{pdfText(`${plan.jour} — ${plan.caloriesTotales} kcal`)}</Text>
-            {plan.repas.map((r, i) => (
-              <View key={i} wrap={false}>
-                <Text style={{ ...s.para, fontWeight: "bold" }}>{pdfText(`${r.type} - ${r.nom} (${r.calories} kcal)`)}</Text>
-                {r.ingredients.map((ing, j) => <Bullet s={s} key={j}>{ing.nom} : {ing.quantite}</Bullet>)}
+        {show("corporelle") && (
+          <View>
+            <Text style={s.h1} break={breakBefore()}>{pdfText(titleOf("corporelle"))}</Text>
+            <KV s={s} k={L.bmi} v={`${calc.imc} (${calc.imcCategorie})`} />
+            <KV s={s} k={L.bmr} v={`${calc.bmr} kcal`} />
+            <KV s={s} k={L.tdee} v={`${calc.tdee} kcal`} />
+            <KV s={s} k={L.targetCalories} v={`${calc.caloriesObjectif} kcal`} />
+            <KV s={s} k={L.hydration} v={`${calc.besoinHydrique} L`} />
+            <View style={{ flexDirection: rtl ? "row-reverse" : "row", justifyContent: "space-around", marginTop: 12 }} wrap={false}>
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ fontSize: 9, color: C.muted, marginBottom: 4 }}>
+                  {pdfText(rtl ? "توقع الوزن (كغ)" : "Projection de poids (kg)")}
+                </Text>
+                <ProjectionBars points={calc.projection} actuel={pdfText(rtl ? "الآن" : "Act.")} />
               </View>
-            ))}
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ fontSize: 9, color: C.muted, marginBottom: 4 }}>
+                  {pdfText(rtl ? "توزيع المغذيات" : "Macronutriments")}
+                </Text>
+                <MacrosDonut
+                  macros={macrosMoy}
+                  labels={{
+                    p: pdfText(rtl ? "بروتين" : "Prot."),
+                    g: pdfText(rtl ? "كربوهيدرات" : "Gluc."),
+                    l: pdfText(rtl ? "دهون" : "Lip."),
+                  }}
+                />
+              </View>
+            </View>
           </View>
-        ))}
+        )}
 
-        <Text style={s.h1} break>{pdfText(L.s5)}</Text>
-        {program.nutrition.recettes.map((rec, i) => (
-          <View key={i} wrap={false}>
-            <Text style={s.h3}>{pdfText(`${rec.nom} - ${rec.calories} kcal - ${rec.tempsCuisson}`)}</Text>
-            {rec.ingredients.map((ing, j) => <Bullet s={s} key={j}>{ing.nom} : {ing.quantite}</Bullet>)}
-            {rec.etapes.map((e, j) => <Text key={j} style={s.para}>{pdfText(`${j + 1}. ${e}`)}</Text>)}
+        {show("medicale") && (
+          <View>
+            <Text style={s.h1} break={breakBefore()}>{pdfText(titleOf("medicale"))}</Text>
+            <Text style={s.para}>{pdfText(program.analyse.resumeProfil)}</Text>
+            <Text style={s.h3}>{pdfText(L.weightRisks)}</Text>
+            <Text style={s.para}>{pdfText(program.analyse.risquesPoids)}</Text>
+            <Text style={s.h3}>{pdfText(L.diabetes)}</Text>
+            <Text style={s.para}>{pdfText(program.analyse.analyseDiabete)}</Text>
+            <Text style={s.h3}>{pdfText(L.nutrition)}</Text>
+            <Text style={s.para}>{pdfText(program.analyse.analyseNutritionnelle)}</Text>
           </View>
-        ))}
+        )}
 
-        <Text style={s.h1} break>{pdfText(L.s6)}</Text>
-        {program.nutrition.listeCourses.map((cat, i) => (
-          <View key={i} wrap={false}>
-            <Text style={s.h3}>{pdfText(cat.categorie)}</Text>
-            {cat.items.map((it, j) => <KV s={s} key={j} k={it.nom} v={it.quantite} />)}
-          </View>
-        ))}
-
-        <Text style={s.h1} break>{pdfText(L.s7)}</Text>
-        {program.sport.semaines.map((sem) => (
-          <View key={sem.semaine}>
-            <Text style={s.h3}>{pdfText(`${L.week} ${sem.semaine} - ${sem.objectif}`)}</Text>
-            {sem.jours.map((jour, i) => (
-              <View key={i} wrap={false} style={{ marginBottom: 4 }}>
-                <Text style={{ fontWeight: "bold", textAlign: rtl ? "right" : "left" }}>{pdfText(`${jour.jour} - ${jour.focus}`)}</Text>
-                <Text style={s.para}>{pdfText(`${L.warmup} : ${jour.echauffement}${jour.cardio ? ` | ${L.cardio} : ${jour.cardio}` : ""}`)}</Text>
-                {jour.exercices.map((ex, j) => (
-                  <Bullet s={s} key={j}>{ex.nom} - {[ex.series && `${ex.series} ${L.series}`, ex.repetitions, ex.duree].filter(Boolean).join(", ")}</Bullet>
+        {show("alimentaire") && (
+          <View>
+            <Text style={s.h1} break={breakBefore()}>{pdfText(titleOf("alimentaire"))}</Text>
+            {plans.map((plan, d) => (
+              <View key={d}>
+                <Text style={s.h3}>{pdfText(`${plan.jour} — ${plan.caloriesTotales} kcal`)}</Text>
+                {plan.repas.map((r, i) => (
+                  <View key={i} wrap={false}>
+                    <Text style={{ ...s.para, fontWeight: "bold" }}>{pdfText(`${r.type} - ${r.nom} (${r.calories} kcal)`)}</Text>
+                    {r.ingredients.map((ing, j) => <Bullet s={s} key={j}>{ing.nom} : {ing.quantite}</Bullet>)}
+                  </View>
                 ))}
               </View>
             ))}
           </View>
-        ))}
+        )}
 
-        <Text style={s.h1} break>{pdfText(L.s8)}</Text>
-        {program.analyse.recommandationsGenerales.map((r, i) => <Bullet s={s} key={i}>{r}</Bullet>)}
-
-        <View style={s.sig}>
+        {show("recettes") && (
           <View>
-            <Text style={s.sigLabel}>{pdfText(L.stamp)}</Text>
-            {safeImageSrc(form.branding.cachet) && <Image src={safeImageSrc(form.branding.cachet)!} style={s.sigImg} />}
+            <Text style={s.h1} break={breakBefore()}>{pdfText(titleOf("recettes"))}</Text>
+            {program.nutrition.recettes.map((rec, i) => (
+              <View key={i} wrap={false}>
+                <Text style={s.h3}>{pdfText(`${rec.nom} - ${rec.calories} kcal - ${rec.tempsCuisson}`)}</Text>
+                {rec.ingredients.map((ing, j) => <Bullet s={s} key={j}>{ing.nom} : {ing.quantite}</Bullet>)}
+                {rec.etapes.map((e, j) => <Text key={j} style={s.para}>{pdfText(`${j + 1}. ${e}`)}</Text>)}
+              </View>
+            ))}
           </View>
-          <View style={{ alignItems: rtl ? "flex-start" : "flex-end" }}>
-            <Text style={s.sigLabel}>{pdfText(form.branding.nomMedecin ? `${L.doctorPrefix} ${form.branding.nomMedecin}` : L.signature)}</Text>
-            {safeImageSrc(form.branding.signature) && <Image src={safeImageSrc(form.branding.signature)!} style={s.sigImg} />}
+        )}
+
+        {show("courses") && (
+          <View>
+            <Text style={s.h1} break={breakBefore()}>{pdfText(titleOf("courses"))}</Text>
+            {program.nutrition.listeCourses.map((cat, i) => (
+              <View key={i} wrap={false}>
+                <Text style={s.h3}>{pdfText(cat.categorie)}</Text>
+                {cat.items.map((it, j) => <KV s={s} key={j} k={it.nom} v={it.quantite} />)}
+              </View>
+            ))}
           </View>
-        </View>
+        )}
+
+        {show("sportif") && (
+          <View>
+            <Text style={s.h1} break={breakBefore()}>{pdfText(titleOf("sportif"))}</Text>
+            {program.sport.semaines.map((sem) => (
+              <View key={sem.semaine}>
+                <Text style={s.h3}>{pdfText(`${L.week} ${sem.semaine} - ${sem.objectif}`)}</Text>
+                {sem.jours.map((jour, i) => (
+                  <View key={i} wrap={false} style={{ marginBottom: 4 }}>
+                    <Text style={{ fontWeight: "bold", textAlign: rtl ? "right" : "left" }}>{pdfText(`${jour.jour} - ${jour.focus}`)}</Text>
+                    <Text style={s.para}>{pdfText(`${L.warmup} : ${jour.echauffement}${jour.cardio ? ` | ${L.cardio} : ${jour.cardio}` : ""}`)}</Text>
+                    {jour.exercices.map((ex, j) => (
+                      <Bullet s={s} key={j}>{ex.nom} - {[ex.series && `${ex.series} ${L.series}`, ex.repetitions, ex.duree].filter(Boolean).join(", ")}</Bullet>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {show("recommandations") && (
+          <View>
+            <Text style={s.h1} break={breakBefore()}>{pdfText(titleOf("recommandations"))}</Text>
+            {program.analyse.recommandationsGenerales.map((r, i) => <Bullet s={s} key={i}>{r}</Bullet>)}
+          </View>
+        )}
+
+        {show("signature") && (
+          <View style={s.sig}>
+            <View>
+              <Text style={s.sigLabel}>{pdfText(L.stamp)}</Text>
+              {safeImageSrc(form.branding.cachet) && <Image src={safeImageSrc(form.branding.cachet)!} style={s.sigImg} />}
+            </View>
+            <View style={{ alignItems: rtl ? "flex-start" : "flex-end" }}>
+              <Text style={s.sigLabel}>{pdfText(form.branding.nomMedecin ? `${L.doctorPrefix} ${form.branding.nomMedecin}` : L.signature)}</Text>
+              {safeImageSrc(form.branding.signature) && <Image src={safeImageSrc(form.branding.signature)!} style={s.sigImg} />}
+            </View>
+          </View>
+        )}
 
         <Footer form={form} L={L} s={s} />
       </Page>

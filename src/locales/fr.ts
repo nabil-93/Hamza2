@@ -166,6 +166,8 @@ export const fr = {
   "export.docx": "Générer Word",
   "export.html": "Ouvrir / Éditer (HTML)",
   "export.preview": "Aperçu du rapport",
+  "export.sectionsTitle": "Sections à inclure dans le rapport",
+  "export.sectionsEmpty": "Sélectionnez au moins une section.",
   "export.langTitle": "Langue du document",
   "export.translating": "Traduction en cours…",
   "export.translateNote": "Le programme a été généré en {src}. Il sera traduit en {dst} avant l'export.",

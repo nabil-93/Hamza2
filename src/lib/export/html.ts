@@ -1,6 +1,7 @@
 import type { PatientForm, CalculationResult, GeneratedProgram, Locale, Macros } from "@/types";
 import { getReportLabels } from "./labels";
 import { macroPercents } from "@/lib/utils";
+import { resolveSections, defaultSections, type SectionKey } from "./sections";
 
 const C = { primary: "#0F4C81", secondary: "#2E8B57", amber: "#F59E0B", muted: "#64748B", border: "#E5E7EB", bg: "#F8FAFC" };
 
@@ -69,16 +70,23 @@ interface ReportData {
   calc: CalculationResult;
   program: GeneratedProgram;
   locale: Locale;
+  /** Sections à inclure (toutes par défaut). */
+  sections?: Record<SectionKey, boolean>;
 }
 
 /**
  * Génère un document HTML autonome, éditable (contenteditable) et imprimable
  * en PDF depuis le navigateur, reproduisant l'aperçu (cartes, graphes, tableaux).
  */
-export function buildHtml({ form, calc, program, locale }: ReportData): string {
+export function buildHtml({ form, calc, program, locale, sections }: ReportData): string {
   const L = getReportLabels(locale);
   const rtl = locale === "ar";
   const dir = rtl ? "rtl" : "ltr";
+
+  // Sections actives + numérotation continue.
+  const active = resolveSections(sections ?? defaultSections(), locale);
+  const titleOf = (key: SectionKey) => active.find((sec) => sec.key === key)?.title ?? "";
+  const show = (key: SectionKey) => active.some((sec) => sec.key === key);
   const fontFamily = rtl
     ? "'Cairo','Segoe UI',Tahoma,sans-serif"
     : "'Inter','Segoe UI',Arial,sans-serif";
@@ -192,9 +200,27 @@ export function buildHtml({ form, calc, program, locale }: ReportData): string {
       <h1>${esc(L.reportTitle)}</h1>
       <div style="font-size:18px">${esc(form.prenom)} ${esc(form.nom)}</div>
       <div style="color:${C.muted};margin-top:4px">${calc.age} ${esc(L.years)} · ${esc(L.bmi)} ${calc.imc}</div>
+      <div style="margin-top:18px;text-align:${rtl ? "right" : "left"};max-width:420px;margin-left:auto;margin-right:auto">
+        <div style="font-weight:700;color:${C.primary};margin-bottom:6px">${esc(rtl ? "المحتويات" : "Sommaire")}</div>
+        ${active.map((sec) => `<div style="color:${C.muted};font-size:13px;margin-bottom:2px">${esc(sec.title)}</div>`).join("")}
+      </div>
     </div>
 
-    <h2>${esc(L.s2)}</h2>
+    ${
+      show("patient")
+        ? `<h2>${esc(titleOf("patient"))}</h2>
+    <div class="grid2">
+      ${stat(L.fullName, `${form.prenom} ${form.nom}`)}
+      ${stat(L.age, `${calc.age} ${L.years}`)}
+      ${stat(L.height, `${form.taille} cm`)}
+      ${stat(L.weightCurrentTarget, `${form.poidsActuel} → ${form.poidsCible} kg`)}
+    </div>`
+        : ""
+    }
+
+    ${
+      show("corporelle")
+        ? `<h2>${esc(titleOf("corporelle"))}</h2>
     <div class="grid4">
       ${stat(L.bmi, `${calc.imc}`)}
       ${stat(L.bmr, `${calc.bmr} kcal`)}
@@ -204,42 +230,57 @@ export function buildHtml({ form, calc, program, locale }: ReportData): string {
     <div class="grid2" style="margin-top:16px">
       <div class="card"><h4 style="margin-top:0">${esc(rtl ? "توقع الوزن" : "Projection de poids")}</h4>${projectionBars(calc.projection, "kg", rtl ? "الآن" : "Actuel")}</div>
       <div class="card"><h4 style="margin-top:0">${esc(rtl ? "توزيع المغذيات" : "Macronutriments")}</h4>${macrosDonut(macros, { p: rtl ? "بروتين" : "Protéines", g: rtl ? "كربوهيدرات" : "Glucides", l: rtl ? "دهون" : "Lipides" })}</div>
-    </div>
+    </div>`
+        : ""
+    }
 
-    <h2>${esc(L.s3)}</h2>
+    ${
+      show("medicale")
+        ? `<h2>${esc(titleOf("medicale"))}</h2>
     <p>${esc(a.resumeProfil)}</p>
     <div class="grid2">
       <div class="card"><strong>${esc(L.weightRisks)}</strong><p style="margin:6px 0 0;color:${C.muted}">${esc(a.risquesPoids)}</p></div>
       <div class="card"><strong>${esc(L.diabetes)}</strong><p style="margin:6px 0 0;color:${C.muted}">${esc(a.analyseDiabete)}</p></div>
       <div class="card"><strong>${esc(L.nutrition)}</strong><p style="margin:6px 0 0;color:${C.muted}">${esc(a.analyseNutritionnelle)}</p></div>
       <div class="card"><strong>${esc(L.activity)}</strong><p style="margin:6px 0 0;color:${C.muted}">${esc(a.analyseActivite)}</p></div>
-    </div>
+    </div>`
+        : ""
+    }
 
-    <h2>${esc(L.s4)}</h2>
+    ${
+      show("alimentaire")
+        ? `<h2>${esc(titleOf("alimentaire"))}</h2>
     ${plans
       .map(
         (plan) => `<h3 style="color:${C.secondary};margin-top:16px">${esc(plan.jour)} — ${plan.caloriesTotales} kcal</h3>
     ${plan.repas.map(meal).join("")}`,
       )
-      .join("")}
+      .join("")}`
+        : ""
+    }
 
-    <h2>${esc(L.s5)}</h2>
-    ${program.nutrition.recettes.map(recipe).join("")}
+    ${show("recettes") ? `<h2>${esc(titleOf("recettes"))}</h2>${program.nutrition.recettes.map(recipe).join("")}` : ""}
 
-    <h2>${esc(L.s6)}</h2>
-    <div class="grid2">${program.nutrition.listeCourses.map(shoppingCat).join("")}</div>
+    ${show("courses") ? `<h2>${esc(titleOf("courses"))}</h2><div class="grid2">${program.nutrition.listeCourses.map(shoppingCat).join("")}</div>` : ""}
 
-    <h2>${esc(L.s7)}</h2>
+    ${
+      show("sportif")
+        ? `<h2>${esc(titleOf("sportif"))}</h2>
     <p style="color:${C.muted}">${esc(program.sport.resume)}</p>
-    ${program.sport.semaines.map(week).join("")}
+    ${program.sport.semaines.map(week).join("")}`
+        : ""
+    }
 
-    <h2>${esc(L.s8)}</h2>
-    <ul>${a.recommandationsGenerales.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+    ${show("recommandations") ? `<h2>${esc(titleOf("recommandations"))}</h2><ul>${a.recommandationsGenerales.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
 
-    <div style="display:flex;justify-content:space-between;margin-top:40px">
+    ${
+      show("signature")
+        ? `<div style="display:flex;justify-content:space-between;margin-top:40px">
       <div><div style="color:${C.muted};font-size:13px">${esc(L.stamp)}</div>${form.branding.cachet ? `<img src="${form.branding.cachet}" style="max-height:60px"/>` : ""}</div>
       <div style="text-align:${rtl ? "left" : "right"}"><div style="color:${C.muted};font-size:13px">${form.branding.nomMedecin ? `${esc(L.doctorPrefix)} ${esc(form.branding.nomMedecin)}` : esc(L.signature)}</div>${form.branding.signature ? `<img src="${form.branding.signature}" style="max-height:60px"/>` : ""}</div>
-    </div>
+    </div>`
+        : ""
+    }
   </div>
 </body>
 </html>`;

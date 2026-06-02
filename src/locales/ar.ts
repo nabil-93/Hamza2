@@ -168,6 +168,8 @@ export const ar: Record<TranslationKey, string> = {
   "export.docx": "توليد Word",
   "export.html": "فتح / تعديل (HTML)",
   "export.preview": "معاينة التقرير",
+  "export.sectionsTitle": "الأقسام المراد تضمينها في التقرير",
+  "export.sectionsEmpty": "اختر قسمًا واحدًا على الأقل.",
   "export.langTitle": "لغة المستند",
   "export.translating": "جارٍ الترجمة…",
   "export.translateNote": "تم توليد البرنامج بـ {src}. سيُترجَم إلى {dst} قبل التصدير.",
