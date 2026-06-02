@@ -35,7 +35,7 @@ export default function HomePage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg medical-gradient text-white">
               <Stethoscope className="h-5 w-5" />
             </div>
-            <span className="font-semibold text-foreground">HQ Nutrition</span>
+            <span className="font-semibold text-foreground">HQ</span>
           </div>
           <LanguageSwitcher />
         </div>
