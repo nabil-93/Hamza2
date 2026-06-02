@@ -24,7 +24,7 @@ export default function GenerateurPage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg medical-gradient text-white">
                 <Stethoscope className="h-4 w-4" />
               </div>
-              <span className="hidden font-semibold text-foreground sm:inline">NutriMed</span>
+              <span className="hidden font-semibold text-foreground sm:inline">HQ Nutrition</span>
             </div>
             <LanguageSwitcher />
           </div>

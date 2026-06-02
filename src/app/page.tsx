@@ -35,7 +35,7 @@ export default function HomePage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg medical-gradient text-white">
               <Stethoscope className="h-5 w-5" />
             </div>
-            <span className="font-semibold text-foreground">NutriMed</span>
+            <span className="font-semibold text-foreground">HQ Nutrition</span>
           </div>
           <LanguageSwitcher />
         </div>
@@ -83,7 +83,7 @@ export default function HomePage() {
 
       <footer className="border-t border-border bg-white py-6">
         <div className="container text-center text-sm text-muted-foreground">
-          NutriMed — {t("app.subtitle")}
+          HQ Nutrition — {t("app.subtitle")}
         </div>
       </footer>
     </div>

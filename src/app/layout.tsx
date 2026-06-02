@@ -16,7 +16,7 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "Générateur Intelligent de Programmes Nutritionnels et Sportifs",
+  title: "HQ Nutrition — Générateur Intelligent de Programmes Nutritionnels et Sportifs",
   description:
     "Plateforme médicale pour générer des programmes nutritionnels et sportifs personnalisés — Nutrition, Diabète, Obésité, Activité Physique.",
 };
