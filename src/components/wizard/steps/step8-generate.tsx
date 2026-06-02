@@ -85,11 +85,10 @@ export function Step8Generate() {
           {/* Durée du programme alimentaire */}
           <div className="w-full max-w-md rounded-lg border border-border bg-muted/30 p-4 text-start">
             <p className="mb-3 text-sm font-semibold text-foreground">{t("generate.durationTitle")}</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { value: 1, label: t("generate.dur1") },
                 { value: 7, label: t("generate.dur7") },
-                { value: 14, label: t("generate.dur14") },
               ].map((opt) => (
                 <button
                   key={opt.value}
