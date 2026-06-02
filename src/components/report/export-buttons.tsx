@@ -9,7 +9,6 @@ import { translateProgram } from "@/lib/ai/client";
 import { cn } from "@/lib/utils";
 import {
   SECTION_ORDER,
-  defaultSections,
   sectionTitle,
   type SectionKey,
 } from "@/lib/export/sections";
@@ -21,18 +20,16 @@ interface Props {
   program: GeneratedProgram;
   /** Langue dans laquelle le programme a été généré. */
   generatedLocale: Locale;
+  /** Sections choisies (à l'étape 8, avant génération). */
+  sections: Record<SectionKey, boolean>;
 }
 
 type Job = "pdf" | "docx" | "html" | null;
 
-export function ExportButtons({ form, calc, program, generatedLocale }: Props) {
+export function ExportButtons({ form, calc, program, generatedLocale, sections }: Props) {
   const { t } = useI18n();
   const [docLocale, setDocLocale] = React.useState<Locale>(generatedLocale);
   const [loading, setLoading] = React.useState<Job>(null);
-  const [sections, setSections] = React.useState<Record<SectionKey, boolean>>(defaultSections);
-
-  const toggleSection = (key: SectionKey) =>
-    setSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // Clé stable du programme pour le cache de traduction.
   const cacheKey = React.useMemo(
@@ -111,41 +108,15 @@ export function ExportButtons({ form, calc, program, generatedLocale }: Props) {
 
   return (
     <div className="flex flex-col gap-3 no-print">
-      {/* Sélection des sections à inclure dans le rapport */}
-      <div className="rounded-lg border border-border bg-muted/30 p-4">
-        <p className="mb-2 text-sm font-semibold text-foreground">{t("export.sectionsTitle")}</p>
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-          {SECTION_ORDER.map((key) => {
-            const checked = sections[key];
-            return (
-              <button
-                key={key}
-                type="button"
-                disabled={busy}
-                onClick={() => toggleSection(key)}
-                className={cn(
-                  "flex items-center gap-2 rounded-md border px-3 py-2 text-start text-xs font-medium transition-colors disabled:opacity-50",
-                  checked
-                    ? "border-secondary bg-secondary-50 text-secondary-700"
-                    : "border-border bg-white text-muted-foreground hover:bg-muted",
-                )}
-              >
-                <span
-                  className={cn(
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border",
-                    checked ? "border-secondary bg-secondary text-white" : "border-border",
-                  )}
-                >
-                  {checked && <Check className="h-3 w-3" />}
-                </span>
-                {sectionTitle(key, docLocale)}
-              </button>
-            );
-          })}
-        </div>
-        {nbSelected === 0 && (
-          <p className="mt-2 text-xs text-danger">{t("export.sectionsEmpty")}</p>
-        )}
+      {/* Rappel des sections incluses (choisies à l'étape 8) */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Check className="h-3.5 w-3.5 text-secondary" />
+        <span className="text-xs font-medium text-muted-foreground">{t("export.sectionsIncluded")} :</span>
+        {SECTION_ORDER.filter((k) => sections[k]).map((key) => (
+          <span key={key} className="rounded-full bg-secondary-50 px-2 py-0.5 text-[11px] text-secondary-700">
+            {sectionTitle(key, docLocale)}
+          </span>
+        ))}
       </div>
 
       {/* Choix de la langue du document */}

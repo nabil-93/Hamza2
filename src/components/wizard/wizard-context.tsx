@@ -8,6 +8,7 @@ import { computeAll } from "@/lib/calculations";
 import type { CalculationResult, GeneratedProgram, PatientForm, Locale } from "@/types";
 import { useI18n } from "@/locales";
 import { TOTAL_STEPS } from "@/lib/constants";
+import { defaultSections, type SectionKey } from "@/lib/export/sections";
 
 interface WizardContextValue {
   form: UseFormReturn<PatientFormSchema>;
@@ -27,6 +28,9 @@ interface WizardContextValue {
   /** Durée du plan alimentaire à générer : 1 (jour type), 7 ou 14 jours. */
   mealDuration: number;
   setMealDuration: (d: number) => void;
+  /** Sections à inclure dans le rapport exporté. */
+  reportSections: Record<SectionKey, boolean>;
+  setReportSections: React.Dispatch<React.SetStateAction<Record<SectionKey, boolean>>>;
 }
 
 const WizardContext = createContext<WizardContextValue | null>(null);
@@ -71,6 +75,8 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   const [generatedLocale, setGeneratedLocale] = useState<Locale>(locale);
   // Durée du plan alimentaire (jours) : 1 par défaut.
   const [mealDuration, setMealDuration] = useState<number>(1);
+  // Sections du rapport (toutes cochées par défaut).
+  const [reportSections, setReportSections] = useState<Record<SectionKey, boolean>>(defaultSections);
 
   const setStep = (s: number) => setStepState(Math.min(TOTAL_STEPS, Math.max(1, s)));
 
@@ -102,9 +108,11 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
       setGeneratedLocale,
       mealDuration,
       setMealDuration,
+      reportSections,
+      setReportSections,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [form, step, calc, program, isGenerating, generatedLocale, mealDuration],
+    [form, step, calc, program, isGenerating, generatedLocale, mealDuration, reportSections],
   );
 
   return <WizardContext.Provider value={value}>{children}</WizardContext.Provider>;

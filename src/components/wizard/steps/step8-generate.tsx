@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Loader2, CheckCircle2 } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle2, Check } from "lucide-react";
 import { useWizard } from "../wizard-context";
 import { useI18n } from "@/locales";
 import { Button } from "@/components/ui/button";
@@ -11,15 +11,20 @@ import { ProgramResult } from "@/components/report/program-result";
 import { ExportButtons } from "@/components/report/export-buttons";
 import { generateProgram } from "@/lib/ai/client";
 import { cn } from "@/lib/utils";
+import { SECTION_ORDER, sectionTitle, type SectionKey } from "@/lib/export/sections";
 import type { PatientForm } from "@/types";
 
 export function Step8Generate() {
   const {
     form, calc, program, setProgram, isGenerating, setIsGenerating,
     generatedLocale, setGeneratedLocale, mealDuration, setMealDuration,
+    reportSections, setReportSections,
   } = useWizard();
   const { t, locale } = useI18n();
   const [error, setError] = React.useState<string | null>(null);
+
+  const toggleSection = (key: SectionKey) =>
+    setReportSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleGenerate = async () => {
     if (!calc) return;
@@ -55,6 +60,7 @@ export function Step8Generate() {
             calc={calc}
             program={program}
             generatedLocale={generatedLocale}
+            sections={reportSections}
           />
         </div>
         <div dir={generatedLocale === "ar" ? "rtl" : "ltr"} className={generatedLocale === "ar" ? "font-arabic" : ""}>
@@ -100,6 +106,41 @@ export function Step8Generate() {
                   {opt.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Sections à inclure dans le rapport */}
+          <div className="w-full max-w-md rounded-lg border border-border bg-muted/30 p-4 text-start">
+            <p className="mb-1 text-sm font-semibold text-foreground">{t("export.sectionsTitle")}</p>
+            <p className="mb-3 text-xs text-muted-foreground">{t("generate.sectionsHint")}</p>
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {SECTION_ORDER.map((key) => {
+                const checked = reportSections[key];
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={isGenerating}
+                    onClick={() => toggleSection(key)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md border px-3 py-2 text-start text-xs font-medium transition-colors disabled:opacity-50",
+                      checked
+                        ? "border-secondary bg-secondary-50 text-secondary-700"
+                        : "border-border bg-white text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border",
+                        checked ? "border-secondary bg-secondary text-white" : "border-border",
+                      )}
+                    >
+                      {checked && <Check className="h-3 w-3" />}
+                    </span>
+                    {sectionTitle(key, locale)}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

@@ -170,6 +170,8 @@ export const ar: Record<TranslationKey, string> = {
   "export.preview": "معاينة التقرير",
   "export.sectionsTitle": "الأقسام المراد تضمينها في التقرير",
   "export.sectionsEmpty": "اختر قسمًا واحدًا على الأقل.",
+  "export.sectionsIncluded": "الأقسام المُضمَّنة",
+  "generate.sectionsHint": "اختر الأقسام التي ستظهر في التقرير المُصدَّر.",
   "export.langTitle": "لغة المستند",
   "export.translating": "جارٍ الترجمة…",
   "export.translateNote": "تم توليد البرنامج بـ {src}. سيُترجَم إلى {dst} قبل التصدير.",

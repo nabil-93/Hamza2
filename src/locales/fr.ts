@@ -168,6 +168,8 @@ export const fr = {
   "export.preview": "Aperçu du rapport",
   "export.sectionsTitle": "Sections à inclure dans le rapport",
   "export.sectionsEmpty": "Sélectionnez au moins une section.",
+  "export.sectionsIncluded": "Sections incluses",
+  "generate.sectionsHint": "Cochez les sections à faire figurer dans le rapport exporté.",
   "export.langTitle": "Langue du document",
   "export.translating": "Traduction en cours…",
   "export.translateNote": "Le programme a été généré en {src}. Il sera traduit en {dst} avant l'export.",
