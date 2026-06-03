@@ -1,5 +1,46 @@
-import type { PatientForm, CalculationResult, Locale, GeneratedProgram } from "@/types";
+import type { PatientForm, CalculationResult, Locale, GeneratedProgram, DailyMealPlan } from "@/types";
 import { MOROCCAN_RECIPES } from "@/data/recipes";
+
+/** System prompt pour l'assistant de modification ciblée du programme. */
+export const CHAT_SYSTEM_PROMPT = `Tu es l'assistant nutritionniste de l'application. Le médecin te demande de MODIFIER une partie précise d'un programme déjà généré (un jour de menu, une recette, l'analyse, etc.).
+
+Règles :
+- Modifie UNIQUEMENT l'élément demandé. Ne touche à rien d'autre.
+- Respecte le régime méditerranéen, la cuisine marocaine saine, et les macros EMC (Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %).
+- Respecte les calories demandées si précisées, sinon garde les calories actuelles.
+- Le couscous reste réservé au vendredi midi.
+- Réponds UNIQUEMENT avec l'objet JSON demandé, sans texte ni balises markdown.`;
+
+/**
+ * Modifie UN jour de menu selon une instruction libre du médecin.
+ * Renvoie le jour complet modifié (même structure DailyMealPlan).
+ */
+export function buildModifyDayPrompt(
+  jour: DailyMealPlan,
+  instruction: string,
+  locale: Locale,
+): string {
+  const lang = locale === "ar" ? "arabe (arabe médical professionnel)" : "français";
+  return `LANGUE : ${lang}.
+
+Voici le menu actuel du jour « ${jour.jour} » :
+${JSON.stringify(jour)}
+
+DEMANDE DU MÉDECIN : « ${instruction} »
+
+Régénère CE SEUL jour en appliquant la demande. Conserve la structure des repas, respecte le régime méditerranéen et les macros (P 11-15 %, G 50-55 %, L 35-40 %).
+
+Réponds STRICTEMENT avec ce JSON (le jour complet modifié) :
+{
+  "jour": "${jour.jour}",
+  "caloriesTotales": number,
+  "macros": { "proteines": number, "glucides": number, "lipides": number },
+  "repas": [
+    { "type": "string", "nom": "string", "calories": number,
+      "ingredients": [ { "nom": "string", "quantite": "string" } ] }
+  ]
+}`;
+}
 
 /** System prompt pour la traduction médicale d'un programme déjà généré. */
 export const TRANSLATION_SYSTEM_PROMPT = `Tu es un traducteur médical professionnel (français ⇄ arabe).

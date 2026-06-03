@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileText, FileDown, FileCode, Printer, Loader2, Check } from "lucide-react";
+import { FileText, FileCode, Loader2, Check } from "lucide-react";
 import { saveAs } from "file-saver";
 import { Button } from "@/components/ui/button";
 import { useI18n, type TranslationKey } from "@/locales";
@@ -24,7 +24,7 @@ interface Props {
   sections: Record<SectionKey, boolean>;
 }
 
-type Job = "pdf" | "docx" | "html" | null;
+type Job = "docx" | "html" | null;
 
 export function ExportButtons({ form, calc, program, generatedLocale, sections }: Props) {
   const { t } = useI18n();
@@ -44,22 +44,6 @@ export function ExportButtons({ form, calc, program, generatedLocale, sections }
   const resolveProgram = async (): Promise<GeneratedProgram> => {
     if (!needsTranslation) return program;
     return translateProgram(program, cacheKey, docLocale);
-  };
-
-  const exportPdf = async () => {
-    setLoading("pdf");
-    try {
-      const prog = await resolveProgram();
-      const { buildPdfBlob } = await import("@/lib/export/pdf");
-      const blob = await buildPdfBlob({ form, calc, program: prog, locale: docLocale, sections });
-      saveAs(blob, `${fileBase}.pdf`);
-    } catch (e) {
-      console.error("PDF export failed", e);
-      const detail = e instanceof Error ? `\n\n${e.message}` : "";
-      alert(t("error.generation") + detail);
-    } finally {
-      setLoading(null);
-    }
   };
 
   const exportDocx = async () => {
@@ -149,10 +133,6 @@ export function ExportButtons({ form, calc, program, generatedLocale, sections }
       )}
 
       <div className="flex flex-wrap gap-3">
-        <Button onClick={exportPdf} disabled={busy || nbSelected === 0}>
-          {loading === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-          {t("export.pdf")}
-        </Button>
         <Button variant="secondary" onClick={exportDocx} disabled={busy || nbSelected === 0}>
           {loading === "docx" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
           {t("export.docx")}

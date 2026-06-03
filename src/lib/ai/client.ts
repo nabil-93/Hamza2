@@ -111,6 +111,20 @@ export function assembleProgram(n: NutritionResult, s: SportResult): GeneratedPr
   return { analyse: n.analyse, nutrition: n.nutrition, sport: s.sport };
 }
 
+/** Modifie un jour de menu via instruction libre (chat). Renvoie le jour mis à jour. */
+export async function modifyDay(
+  index: number,
+  day: DailyMealPlan,
+  instruction: string,
+  locale: Locale,
+): Promise<DailyMealPlan> {
+  const res = await postRaw<{ kind: string; index: number; data: DailyMealPlan }>(
+    "/api/chat/modify",
+    { target: { kind: "day", index, data: day }, instruction, locale },
+  );
+  return res.data;
+}
+
 // Traduction (cache en mémoire de session).
 const translationCache = new Map<string, GeneratedProgram>();
 

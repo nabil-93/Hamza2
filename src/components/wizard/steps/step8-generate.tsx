@@ -10,10 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProgramResult } from "@/components/report/program-result";
 import { ExportButtons } from "@/components/report/export-buttons";
+import { ReportPreview } from "@/components/report/report-preview";
+import { AIChat } from "@/components/report/ai-chat";
 import { generateNutrition, generateSport } from "@/lib/ai/client";
 import { cn } from "@/lib/utils";
 import { SECTION_ORDER, sectionTitle, type SectionKey } from "@/lib/export/sections";
-import type { PatientForm } from "@/types";
+import type { PatientForm, DailyMealPlan } from "@/types";
 
 export function Step8Generate() {
   const {
@@ -79,6 +81,25 @@ export function Step8Generate() {
     setReportSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const isBusy = isGeneratingNutrition || isGeneratingSport;
+
+  // Programme à exporter/prévisualiser (nutrition seule = sport vide).
+  const exportProgram = nutritionResult
+    ? {
+        analyse: nutritionResult.analyse,
+        nutrition: nutritionResult.nutrition,
+        sport: sportResult?.sport ?? { niveau: "", semaines: [], consignesSecurite: [], resume: "" },
+      }
+    : null;
+
+  /** Le chat IA a modifié un jour → on met à jour le résultat nutritionnel. */
+  const handleUpdateDay = (index: number, day: DailyMealPlan) => {
+    if (!nutritionResult) return;
+    const plans = nutritionResult.nutrition.plans.map((p, i) => (i === index ? day : p));
+    setNutritionResult({
+      ...nutritionResult,
+      nutrition: { ...nutritionResult.nutrition, plans },
+    });
+  };
 
   const tabs = [
     { id: "nutrition" as const, label: "🍽️ Nutrition", done: !!nutritionResult },
@@ -253,19 +274,33 @@ export function Step8Generate() {
             </CardContent>
           </Card>
 
-          {/* Boutons export */}
-          {(nutritionResult || program) && calc && (
+          {/* Boutons export Word / HTML */}
+          {exportProgram && calc && (
             <ExportButtons
               form={form.getValues() as PatientForm}
               calc={calc}
-              program={program ?? {
-                analyse: nutritionResult!.analyse,
-                nutrition: nutritionResult!.nutrition,
-                sport: sportResult?.sport ?? { niveau: "", semaines: [], consignesSecurite: [], resume: "" },
-              }}
+              program={exportProgram}
               generatedLocale={generatedLocale}
               sections={reportSections}
             />
+          )}
+
+          {/* Aperçu du rapport + Assistant IA (côte à côte) */}
+          {exportProgram && calc && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ReportPreview
+                form={form.getValues() as PatientForm}
+                calc={calc}
+                program={exportProgram}
+                locale={generatedLocale}
+                sections={reportSections}
+              />
+              <AIChat
+                program={exportProgram}
+                locale={generatedLocale}
+                onUpdateDay={handleUpdateDay}
+              />
+            </div>
           )}
 
           {!nutritionResult && (
