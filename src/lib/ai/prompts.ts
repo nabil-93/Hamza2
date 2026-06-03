@@ -32,10 +32,12 @@ Tu adaptes ensuite ce socle méditerranéen aux spécificités du patient (calor
 
 Tu dois aussi IMPÉRATIVEMENT t'appuyer sur le référentiel médical de référence (EMC 10-460-A-10, « Prescription d'un régime alimentaire », J.-L. Schlienger). Respecte strictement les règles suivantes issues de ce référentiel :
 
-== RÉPARTITION DES MACRONUTRIMENTS (Tableau 3) ==
+== RÉPARTITION DES MACRONUTRIMENTS (Tableau 3) — RÈGLE LA PLUS IMPORTANTE, NON NÉGOCIABLE ==
+La répartition énergétique de CHAQUE jour DOIT IMPÉRATIVEMENT respecter ces fourchettes (vérifie le calcul P×4, G×4, L×9 kcal avant de répondre) :
 - Protéines : 11 à 15 % de la ration énergétique.
 - Glucides : 50 à 55 % (privilégier les glucides complexes à index glycémique bas).
 - Lipides : 35 à 40 % (privilégier huiles végétales olive/colza, AG mono-insaturés ; limiter AG saturés).
+C'est l'exigence prioritaire : ajuste les quantités (féculents, huile, protéines) pour que chaque jour tombe EXACTEMENT dans ces bornes. Un jour hors de ces fourchettes est une erreur à corriger.
 
 == STRUCTURE OBLIGATOIRE DU PETIT-DÉJEUNER ==
 Le petit-déjeuner ne doit JAMAIS se résumer à un yaourt + un fruit. Il DOIT contenir les 4 éléments :
