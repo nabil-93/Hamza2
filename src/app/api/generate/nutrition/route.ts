@@ -36,24 +36,7 @@ export async function POST(req: NextRequest) {
     const days = duration === 7 || duration === 14 ? duration : 1;
     const prompt = buildNutritionPrompt(form, calc, locale, days);
 
-    let data = await generateJson<NutritionProgram>(prompt);
-
-    // Garantie EMC : si un jour est hors fourchette, UNE correction ciblée.
-    // (Une seule reprise pour rester dans les limites de temps de Vercel.)
-    if (!allDaysValid(data)) {
-      const fixPrompt = `${prompt}
-
-CORRECTION OBLIGATOIRE — la répartition des macronutriments doit IMPÉRATIVEMENT respecter, pour CHAQUE jour : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
-Jours à corriger : ${describeDeviations(data)}.
-Ajuste les quantités (féculents, huile, protéines) pour rentrer dans ces fourchettes, puis renvoie le JSON complet corrigé.`;
-      try {
-        const retry = await generateJson<NutritionProgram>(fixPrompt);
-        if (allDaysValid(retry)) data = retry;
-      } catch {
-        // En cas d'échec de la reprise, on garde le premier résultat.
-      }
-    }
-
+    const data = await generateJson<NutritionProgram>(prompt);
     return NextResponse.json(data);
   } catch (err) {
     return handleError(err);
