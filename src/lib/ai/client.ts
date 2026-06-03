@@ -5,7 +5,29 @@ import type {
   NutritionResult,
   SportResult,
   GeneratedProgram,
+  NutritionProgram,
+  MedicalAnalysis,
+  DailyMealPlan,
+  Recipe,
+  ShoppingCategory,
 } from "@/types";
+
+const JOURS_SEMAINE = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+async function postRaw<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    let msg = "GENERATION_FAILED";
+    try { msg = JSON.parse(text).error || msg; } catch { msg = text.slice(0, 200) || msg; }
+    throw new Error(`HTTP_${res.status}: ${msg}`);
+  }
+  return (await res.json()) as T;
+}
 
 export interface GeneratePayload {
   form: PatientForm;
@@ -29,9 +51,54 @@ async function postJson<T>(url: string, body: GeneratePayload): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Génère programme nutritionnel + analyse médicale (indépendant du sport). */
+/**
+ * Génère le programme nutritionnel + l'analyse médicale.
+ *
+ * - Jour type : 1 requête nutrition + 1 requête analyse (parallèle).
+ * - Semaine (7 j) : pour éviter les timeouts, chaque jour est généré par une
+ *   requête COURTE séparée (7 en parallèle), puis recettes + liste de courses
+ *   et l'analyse. Aucune requête longue → pas de timeout.
+ */
 export async function generateNutrition(payload: GeneratePayload): Promise<NutritionResult> {
-  return postJson<NutritionResult>("/api/generate/nutrition", payload);
+  const days = payload.duration === 7 ? 7 : 1;
+
+  if (days === 1) {
+    const [nutritionRes, analyseRes] = await Promise.all([
+      postJson<{ nutrition: NutritionProgram }>("/api/generate/nutrition", payload),
+      postJson<{ analyse: MedicalAnalysis }>("/api/generate/analyse", payload),
+    ]);
+    return { nutrition: nutritionRes.nutrition, analyse: analyseRes.analyse };
+  }
+
+  // Semaine : 7 jours en parallèle + analyse en parallèle.
+  const { form, calc, locale } = payload;
+  const dayPromises = JOURS_SEMAINE.map((jourNom) =>
+    postRaw<{ plan: DailyMealPlan }>("/api/generate/day", {
+      form, calc, locale, jourNom, autresJours: JOURS_SEMAINE.filter((j) => j !== jourNom),
+    }),
+  );
+  const analysePromise = postJson<{ analyse: MedicalAnalysis }>("/api/generate/analyse", payload);
+
+  const [dayResults, analyseRes] = await Promise.all([Promise.all(dayPromises), analysePromise]);
+  const plans = dayResults.map((d) => d.plan);
+
+  // Recettes + liste de courses à partir des menus (1 requête courte).
+  const extras = await postRaw<{ recettes: Recipe[]; listeCourses: ShoppingCategory[] }>(
+    "/api/generate/extras",
+    { plans, locale },
+  );
+
+  const nutrition: NutritionProgram = {
+    plans,
+    recettes: extras.recettes,
+    listeCourses: extras.listeCourses,
+    resumeNutritionnel:
+      locale === "ar"
+        ? "برنامج غذائي متوسطي لمدة أسبوع، متنوع ومتوازن وفق المرجع الطبي."
+        : "Programme alimentaire méditerranéen sur une semaine, varié et équilibré selon le référentiel médical.",
+  };
+
+  return { nutrition, analyse: analyseRes.analyse };
 }
 
 /** Génère programme sportif seul (indépendant de la nutrition). */

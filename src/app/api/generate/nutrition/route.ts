@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai/openai";
-import { buildNutritionPrompt, buildAnalysisPrompt } from "@/lib/ai/prompts";
+import { buildNutritionPrompt } from "@/lib/ai/prompts";
 import { macrosInRange, macroPercents } from "@/lib/utils";
-import type {
-  PatientForm,
-  CalculationResult,
-  Locale,
-  NutritionProgram,
-  MedicalAnalysis,
-  NutritionResult,
-} from "@/types";
+import type { PatientForm, CalculationResult, Locale, NutritionProgram } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -31,27 +24,19 @@ function describeDeviations(prog: NutritionProgram): string {
     .join(" ; ");
 }
 
-/**
- * Génère le programme nutritionnel ET l'analyse médicale en parallèle.
- * Indépendant du programme sportif — évite les timeouts.
- */
+/** Génère UNIQUEMENT le programme alimentaire (indépendant du sport et de l'analyse). */
 export async function POST(req: NextRequest) {
   try {
     const { form, calc, locale, duration } = (await req.json()) as Body;
     const days = duration === 7 ? 7 : 1;
-    const nutritionPrompt = buildNutritionPrompt(form, calc, locale, days);
-    const analysisPrompt = buildAnalysisPrompt(form, calc, locale);
+    const nutrition = await generateJson<NutritionProgram>(
+      buildNutritionPrompt(form, calc, locale, days),
+    );
 
-    const [nutrition, analyse] = await Promise.all([
-      generateJson<NutritionProgram>(nutritionPrompt),
-      generateJson<MedicalAnalysis>(analysisPrompt),
-    ]);
-
-    // Log macros hors fourchette sans bloquer.
     const deviations = describeDeviations(nutrition);
     if (deviations) console.warn("[nutrition] macros hors EMC:", deviations);
 
-    return NextResponse.json({ nutrition, analyse } satisfies NutritionResult);
+    return NextResponse.json({ nutrition });
   } catch (err) {
     const message = err instanceof Error ? err.message : "UNKNOWN";
     const status = message === "MISSING_OPENAI_KEY" ? 401 : 500;

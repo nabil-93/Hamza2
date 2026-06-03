@@ -224,7 +224,86 @@ Réponds STRICTEMENT avec ce JSON :
   ]
 }
 
-Le tableau "plans" DOIT contenir exactement ${duration} élément(s). Donne aussi 3 à 4 recettes détaillées issues de la cuisine marocaine saine, avec quantités exactes en grammes.`;
+Le tableau "plans" DOIT contenir exactement ${duration} élément(s). Donne aussi 3 recettes détaillées issues de la cuisine marocaine saine, avec quantités exactes en grammes.${duration > 1 ? "\nSois CONCIS : pour gagner du temps, n'inclus QUE 3 recettes au total (pas une par jour), et garde les étapes de préparation courtes (2-4 étapes max)." : ""}`;
+}
+
+/**
+ * Génère UN SEUL jour de menu (réponse courte → rapide).
+ * Utilisé pour la génération parallèle d'une semaine (1 requête par jour).
+ */
+export function buildSingleDayPrompt(
+  form: PatientForm,
+  calc: CalculationResult,
+  locale: Locale,
+  jourNom: string,
+  autresJours: string[],
+): string {
+  const repasStruct = form.modeRamadan
+    ? `"type" parmi : "Ftour", "Collation après Tarawih", "Shour"`
+    : `"type" parmi : "Petit-déjeuner", "Collation matin", "Déjeuner", "Collation après-midi", "Dîner"`;
+
+  const couscousNote =
+    jourNom.toLowerCase() === "vendredi"
+      ? `\n- C'est VENDREDI : tu peux mettre un couscous au déjeuner (tradition marocaine).`
+      : `\n- Ce n'est PAS vendredi : AUCUN couscous.`;
+
+  const eviter =
+    autresJours.length > 0
+      ? `\nVARIÉTÉ : ne répète pas les plats déjà utilisés les autres jours (${autresJours.join(", ")}). Propose des plats différents.`
+      : ``;
+
+  return `${listProfile(form, calc, locale)}
+
+TÂCHE : Génère le menu du jour « ${jourNom} » uniquement (~${calc.caloriesObjectif} kcal), conforme au régime méditerranéen et au référentiel EMC.${couscousNote}${eviter}
+
+Réponds STRICTEMENT avec ce JSON (UN seul jour) :
+{
+  "jour": "${jourNom}",
+  "caloriesTotales": number,
+  "macros": { "proteines": number, "glucides": number, "lipides": number },
+  "repas": [
+    {
+      "type": "string (${repasStruct})",
+      "nom": "string",
+      "calories": number,
+      "ingredients": [ { "nom": "string", "quantite": "string (ex: 120 g)" } ]
+    }
+  ]
+}
+
+Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.`;
+}
+
+/**
+ * Génère les recettes détaillées + la liste de courses à partir des menus déjà
+ * générés (jours). Réponse modérée → rapide.
+ */
+export function buildExtrasPrompt(
+  plans: { jour: string; repas: { type: string; nom: string; ingredients: { nom: string; quantite: string }[] }[] }[],
+  locale: Locale,
+): string {
+  const lang = locale === "ar" ? "arabe (arabe médical professionnel)" : "français";
+  return `LANGUE : ${lang}.
+
+Voici les menus déjà établis :
+${JSON.stringify(plans)}
+
+TÂCHE :
+1. Donne 3 recettes détaillées (cuisine marocaine saine) parmi les plats principaux ci-dessus.
+2. Établis UNE liste de courses regroupée par catégorie, en ADDITIONNANT les quantités de TOUS les jours.
+
+Réponds STRICTEMENT avec ce JSON :
+{
+  "recettes": [
+    { "nom": "string", "tempsCuisson": "string", "calories": number,
+      "macros": { "proteines": number, "glucides": number, "lipides": number },
+      "ingredients": [ { "nom": "string", "quantite": "string" } ],
+      "etapes": [ "string" ] }
+  ],
+  "listeCourses": [
+    { "categorie": "string", "items": [ { "nom": "string", "quantite": "string (ex: 1.5 kg)" } ] }
+  ]
+}`;
 }
 
 export function buildSportPrompt(
