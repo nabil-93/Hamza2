@@ -20,7 +20,9 @@ export async function generateJson<T>(
   }
 
   const client = new OpenAI({ apiKey });
-  const model = process.env.OPENAI_MODEL || "gpt-4o";
+  // gpt-4o-mini par défaut : 3-4× plus rapide → tient dans la limite de temps
+  // de Vercel. Surcharger via OPENAI_MODEL=gpt-4o pour plus de qualité.
+  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
   const completion = await client.chat.completions.create({
     model,
