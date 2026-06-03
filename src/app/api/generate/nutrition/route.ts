@@ -37,6 +37,12 @@ export async function POST(req: NextRequest) {
     const prompt = buildNutritionPrompt(form, calc, locale, days);
 
     const data = await generateJson<NutritionProgram>(prompt);
+
+    // Log côté serveur si macros hors fourchette (sans retry pour éviter timeout).
+    if (!allDaysValid(data)) {
+      console.warn("[nutrition] macros hors EMC:", describeDeviations(data));
+    }
+
     return NextResponse.json(data);
   } catch (err) {
     return handleError(err);
