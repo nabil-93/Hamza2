@@ -2,21 +2,19 @@ import type {
   PatientForm,
   CalculationResult,
   Locale,
+  NutritionResult,
+  SportResult,
   GeneratedProgram,
-  NutritionProgram,
-  SportProgram,
-  MedicalAnalysis,
 } from "@/types";
 
-interface Payload {
+export interface GeneratePayload {
   form: PatientForm;
   calc: CalculationResult;
   locale: Locale;
-  /** Durée du plan alimentaire en jours (1, 7 ou 14). */
   duration?: number;
 }
 
-async function postJson<T>(url: string, body: Payload): Promise<T> {
+async function postJson<T>(url: string, body: GeneratePayload): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -31,21 +29,22 @@ async function postJson<T>(url: string, body: Payload): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Lance la génération complète (nutrition + sport + analyse) en parallèle. */
-export async function generateProgram(payload: Payload): Promise<GeneratedProgram> {
-  const [nutrition, sportAnalyse] = await Promise.all([
-    postJson<NutritionProgram>("/api/generate/nutrition", payload),
-    postJson<{ sport: SportProgram; analyse: MedicalAnalysis }>("/api/generate/sport", payload),
-  ]);
-
-  return {
-    nutrition,
-    sport: sportAnalyse.sport,
-    analyse: sportAnalyse.analyse,
-  };
+/** Génère programme nutritionnel + analyse médicale (indépendant du sport). */
+export async function generateNutrition(payload: GeneratePayload): Promise<NutritionResult> {
+  return postJson<NutritionResult>("/api/generate/nutrition", payload);
 }
 
-/** Traduit un programme vers la langue cible (avec cache en mémoire de session). */
+/** Génère programme sportif seul (indépendant de la nutrition). */
+export async function generateSport(payload: GeneratePayload): Promise<SportResult> {
+  return postJson<SportResult>("/api/generate/sport", payload);
+}
+
+/** Assemble NutritionResult + SportResult en GeneratedProgram pour l'export. */
+export function assembleProgram(n: NutritionResult, s: SportResult): GeneratedProgram {
+  return { analyse: n.analyse, nutrition: n.nutrition, sport: s.sport };
+}
+
+// Traduction (cache en mémoire de session).
 const translationCache = new Map<string, GeneratedProgram>();
 
 export async function translateProgram(

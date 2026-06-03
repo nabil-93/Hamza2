@@ -9,25 +9,32 @@ import { Badge } from "@/components/ui/badge";
 import { MacrosChart } from "@/components/charts/macros-chart";
 import type { GeneratedProgram } from "@/types";
 
+type TabId = "nutrition" | "recipes" | "shopping" | "sport" | "reco";
+
 interface Props {
   program: GeneratedProgram;
+  /** Si fourni, affiche uniquement ces onglets. */
+  tabs?: TabId[];
 }
 
-export function ProgramResult({ program }: Props) {
-  const { t } = useI18n();
-  const [tab, setTab] = React.useState("nutrition");
+const ALL_TABS: TabId[] = ["nutrition", "recipes", "shopping", "sport", "reco"];
 
-  const tabs = [
-    { id: "nutrition", label: t("result.nutrition"), icon: <Utensils className="h-4 w-4" /> },
-    { id: "recipes", label: t("result.recipes"), icon: <ChefHat className="h-4 w-4" /> },
-    { id: "shopping", label: t("result.shopping"), icon: <ShoppingCart className="h-4 w-4" /> },
-    { id: "sport", label: t("result.sport"), icon: <Dumbbell className="h-4 w-4" /> },
-    { id: "reco", label: t("result.recommendations"), icon: <ClipboardList className="h-4 w-4" /> },
-  ];
+export function ProgramResult({ program, tabs: allowedTabs }: Props) {
+  const { t } = useI18n();
+  const visibleIds = allowedTabs ?? ALL_TABS;
+  const [tab, setTab] = React.useState<TabId>(visibleIds[0] ?? "nutrition");
+
+  const allTabs = [
+    { id: "nutrition" as TabId, label: t("result.nutrition"), icon: <Utensils className="h-4 w-4" /> },
+    { id: "recipes" as TabId, label: t("result.recipes"), icon: <ChefHat className="h-4 w-4" /> },
+    { id: "shopping" as TabId, label: t("result.shopping"), icon: <ShoppingCart className="h-4 w-4" /> },
+    { id: "sport" as TabId, label: t("result.sport"), icon: <Dumbbell className="h-4 w-4" /> },
+    { id: "reco" as TabId, label: t("result.recommendations"), icon: <ClipboardList className="h-4 w-4" /> },
+  ].filter((t) => visibleIds.includes(t.id));
 
   return (
     <div className="space-y-5">
-      <Tabs tabs={tabs} active={tab} onChange={setTab} />
+      <Tabs tabs={allTabs} active={tab} onChange={(v) => setTab(v as TabId)} />
 
       {tab === "nutrition" && <NutritionTab program={program} />}
       {tab === "recipes" && <RecipesTab program={program} />}

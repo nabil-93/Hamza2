@@ -5,7 +5,8 @@ import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { patientFormSchema, type PatientFormSchema } from "@/lib/schema";
 import { computeAll } from "@/lib/calculations";
-import type { CalculationResult, GeneratedProgram, PatientForm, Locale } from "@/types";
+import type { CalculationResult, GeneratedProgram, PatientForm, Locale, NutritionResult, SportResult } from "@/types";
+import { assembleProgram } from "@/lib/ai/client";
 import { useI18n } from "@/locales";
 import { TOTAL_STEPS } from "@/lib/constants";
 import { defaultSections, type SectionKey } from "@/lib/export/sections";
@@ -18,10 +19,18 @@ interface WizardContextValue {
   prev: () => void;
   calc: CalculationResult | null;
   recompute: () => void;
+  /** Résultat nutritionnel (nutrition + analyse). Null avant génération. */
+  nutritionResult: NutritionResult | null;
+  setNutritionResult: (r: NutritionResult | null) => void;
+  /** Résultat sportif. Null avant génération. */
+  sportResult: SportResult | null;
+  setSportResult: (r: SportResult | null) => void;
+  /** Programme complet assemblé (disponible quand les deux sont générés). */
   program: GeneratedProgram | null;
-  setProgram: (p: GeneratedProgram | null) => void;
-  isGenerating: boolean;
-  setIsGenerating: (v: boolean) => void;
+  isGeneratingNutrition: boolean;
+  setIsGeneratingNutrition: (v: boolean) => void;
+  isGeneratingSport: boolean;
+  setIsGeneratingSport: (v: boolean) => void;
   /** Langue dans laquelle le programme a réellement été généré (= UI au moment du clic). */
   generatedLocale: Locale;
   setGeneratedLocale: (l: Locale) => void;
@@ -69,14 +78,19 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   const { locale } = useI18n();
   const [step, setStepState] = useState(1);
   const [calc, setCalc] = useState<CalculationResult | null>(null);
-  const [program, setProgram] = useState<GeneratedProgram | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  // Langue effective de génération (figée au moment du clic « Générer »).
+  const [nutritionResult, setNutritionResult] = useState<NutritionResult | null>(null);
+  const [sportResult, setSportResult] = useState<SportResult | null>(null);
+  const [isGeneratingNutrition, setIsGeneratingNutrition] = useState(false);
+  const [isGeneratingSport, setIsGeneratingSport] = useState(false);
   const [generatedLocale, setGeneratedLocale] = useState<Locale>(locale);
-  // Durée du plan alimentaire (jours) : 1 par défaut.
   const [mealDuration, setMealDuration] = useState<number>(1);
-  // Sections du rapport (toutes cochées par défaut).
   const [reportSections, setReportSections] = useState<Record<SectionKey, boolean>>(defaultSections);
+
+  // Programme complet assemblé (disponible quand les deux sont générés).
+  const program: GeneratedProgram | null =
+    nutritionResult && sportResult
+      ? assembleProgram(nutritionResult, sportResult)
+      : null;
 
   const setStep = (s: number) => setStepState(Math.min(TOTAL_STEPS, Math.max(1, s)));
 
@@ -100,10 +114,15 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
       prev,
       calc,
       recompute,
+      nutritionResult,
+      setNutritionResult,
+      sportResult,
+      setSportResult,
       program,
-      setProgram,
-      isGenerating,
-      setIsGenerating,
+      isGeneratingNutrition,
+      setIsGeneratingNutrition,
+      isGeneratingSport,
+      setIsGeneratingSport,
       generatedLocale,
       setGeneratedLocale,
       mealDuration,
@@ -112,7 +131,7 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
       setReportSections,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [form, step, calc, program, isGenerating, generatedLocale, mealDuration, reportSections],
+    [form, step, calc, nutritionResult, sportResult, program, isGeneratingNutrition, isGeneratingSport, generatedLocale, mealDuration, reportSections],
   );
 
   return <WizardContext.Provider value={value}>{children}</WizardContext.Provider>;

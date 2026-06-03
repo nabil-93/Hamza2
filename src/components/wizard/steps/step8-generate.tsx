@@ -1,168 +1,280 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Loader2, CheckCircle2, Check } from "lucide-react";
+import { Salad, Dumbbell, Loader2, CheckCircle2, Check, Sparkles } from "lucide-react";
 import { useWizard } from "../wizard-context";
 import { useI18n } from "@/locales";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ProgramResult } from "@/components/report/program-result";
 import { ExportButtons } from "@/components/report/export-buttons";
-import { generateProgram } from "@/lib/ai/client";
+import { generateNutrition, generateSport } from "@/lib/ai/client";
 import { cn } from "@/lib/utils";
 import { SECTION_ORDER, sectionTitle, type SectionKey } from "@/lib/export/sections";
 import type { PatientForm } from "@/types";
 
 export function Step8Generate() {
   const {
-    form, calc, program, setProgram, isGenerating, setIsGenerating,
-    generatedLocale, setGeneratedLocale, mealDuration, setMealDuration,
+    form, calc,
+    nutritionResult, setNutritionResult,
+    sportResult, setSportResult,
+    program,
+    isGeneratingNutrition, setIsGeneratingNutrition,
+    isGeneratingSport, setIsGeneratingSport,
+    generatedLocale, setGeneratedLocale,
+    mealDuration, setMealDuration,
     reportSections, setReportSections,
   } = useWizard();
   const { t, locale } = useI18n();
-  const [error, setError] = React.useState<string | null>(null);
+  const [errorNutrition, setErrorNutrition] = React.useState<string | null>(null);
+  const [errorSport, setErrorSport] = React.useState<string | null>(null);
+  const [activeTab, setActiveTab] = React.useState<"nutrition" | "sport" | "export">("nutrition");
+
+  const handleGenerateNutrition = async () => {
+    if (!calc) return;
+    setErrorNutrition(null);
+    setIsGeneratingNutrition(true);
+    try {
+      const result = await generateNutrition({
+        form: form.getValues() as PatientForm,
+        calc,
+        locale,
+        duration: mealDuration,
+      });
+      setNutritionResult(result);
+      setGeneratedLocale(locale);
+      setActiveTab("sport");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      setErrorNutrition(msg.includes("MISSING_OPENAI_KEY") ? t("error.noKey") : `${t("error.generation")} [${msg}]`);
+    } finally {
+      setIsGeneratingNutrition(false);
+    }
+  };
+
+  const handleGenerateSport = async () => {
+    if (!calc) return;
+    setErrorSport(null);
+    setIsGeneratingSport(true);
+    try {
+      const result = await generateSport({
+        form: form.getValues() as PatientForm,
+        calc,
+        locale,
+      });
+      setSportResult(result);
+      setGeneratedLocale(locale);
+      setActiveTab("export");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      setErrorSport(msg.includes("MISSING_OPENAI_KEY") ? t("error.noKey") : `${t("error.generation")} [${msg}]`);
+    } finally {
+      setIsGeneratingSport(false);
+    }
+  };
 
   const toggleSection = (key: SectionKey) =>
     setReportSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const handleGenerate = async () => {
-    if (!calc) return;
-    setError(null);
-    setIsGenerating(true);
-    try {
-      const result = await generateProgram({
-        form: form.getValues() as PatientForm,
-        calc,
-        locale, // langue de l'interface au moment du clic
-        duration: mealDuration,
-      });
-      setGeneratedLocale(locale);
-      setProgram(result);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      setError(msg === "MISSING_OPENAI_KEY" ? t("error.noKey") : `${t("error.generation")} [${msg}]`);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  const isBusy = isGeneratingNutrition || isGeneratingSport;
 
-  if (program && calc) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-secondary">
-            <CheckCircle2 className="h-5 w-5" />
-            <p className="font-semibold">{t("generate.done")}</p>
-          </div>
-          <ExportButtons
-            form={form.getValues() as PatientForm}
-            calc={calc}
-            program={program}
-            generatedLocale={generatedLocale}
-            sections={reportSections}
-          />
-        </div>
-        <div dir={generatedLocale === "ar" ? "rtl" : "ltr"} className={generatedLocale === "ar" ? "font-arabic" : ""}>
-          <ProgramResult program={program} />
-        </div>
-      </div>
-    );
-  }
+  const tabs = [
+    { id: "nutrition" as const, label: "🍽️ Nutrition", done: !!nutritionResult },
+    { id: "sport" as const, label: "🏃 Sport", done: !!sportResult },
+    { id: "export" as const, label: "📄 Export", done: !!program },
+  ];
 
   return (
     <div className="space-y-5">
-      <Card>
-        <CardContent className="flex flex-col items-center gap-5 py-12 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl medical-gradient text-white">
-            <Sparkles className="h-8 w-8" />
-          </div>
-          <div className="max-w-md">
-            <h3 className="text-lg font-semibold text-foreground">{t("step.8")}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{t("generate.intro")}</p>
-          </div>
+      {/* Onglets */}
+      <div className="flex gap-2 border-b border-border pb-3">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-t-md px-4 py-2 text-sm font-medium transition-colors",
+              activeTab === tab.id
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {tab.done && <CheckCircle2 className="h-3.5 w-3.5 text-secondary" />}
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-          {/* Durée du programme alimentaire */}
-          <div className="w-full max-w-md rounded-lg border border-border bg-muted/30 p-4 text-start">
-            <p className="mb-3 text-sm font-semibold text-foreground">{t("generate.durationTitle")}</p>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { value: 1, label: t("generate.dur1") },
-                { value: 7, label: t("generate.dur7") },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={isGenerating}
-                  onClick={() => setMealDuration(opt.value)}
-                  className={cn(
-                    "rounded-md border px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-50",
-                    mealDuration === opt.value
-                      ? "border-primary bg-primary-50 text-primary-700 ring-1 ring-primary"
-                      : "border-border bg-white hover:border-primary/40 hover:bg-muted",
+      {/* ── TAB 1 : Programme alimentaire ── */}
+      {activeTab === "nutrition" && (
+        <div className="space-y-4">
+          {!nutritionResult ? (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-5 py-10 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-white">
+                  <Salad className="h-7 w-7" />
+                </div>
+                <div className="max-w-md">
+                  <h3 className="text-base font-semibold text-foreground">{t("generate.durationTitle")}</h3>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    {[{ value: 1, label: t("generate.dur1") }, { value: 7, label: t("generate.dur7") }].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => setMealDuration(opt.value)}
+                        className={cn(
+                          "rounded-md border px-3 py-2 text-sm font-medium transition-all disabled:opacity-50",
+                          mealDuration === opt.value
+                            ? "border-secondary bg-secondary-50 text-secondary-700 ring-1 ring-secondary"
+                            : "border-border bg-white hover:bg-muted",
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {errorNutrition && <Alert variant="danger" title="Erreur">{errorNutrition}</Alert>}
+                <Button size="lg" onClick={handleGenerateNutrition} disabled={isBusy} className="bg-secondary hover:bg-secondary-700">
+                  {isGeneratingNutrition ? (
+                    <><Loader2 className="h-5 w-5 animate-spin" />{t("generate.generatingNutrition")}</>
+                  ) : (
+                    <><Salad className="h-5 w-5" />{t("generate.generateNutrition")}</>
                   )}
-                >
-                  {opt.label}
-                </button>
-              ))}
+                </Button>
+                <p className="text-xs text-muted-foreground">{t("generate.langInfo")}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Badge variant="success" className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" />{t("generate.nutritionDone")}
+                </Badge>
+                <Button size="sm" variant="outline" onClick={handleGenerateNutrition} disabled={isBusy}>
+                  {isGeneratingNutrition ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Salad className="h-4 w-4" />Régénérer</>}
+                </Button>
+              </div>
+              {errorNutrition && <Alert variant="danger" title="Erreur">{errorNutrition}</Alert>}
+              <ProgramResult program={{ ...nutritionResult, sport: sportResult?.sport ?? { niveau: "", semaines: [], consignesSecurite: [], resume: "" } }} tabs={["nutrition", "recipes", "shopping", "reco"]} />
+              <Button onClick={() => setActiveTab("sport")} className="w-full">
+                <Dumbbell className="h-4 w-4" />{t("generate.generateSport")} →
+              </Button>
             </div>
-          </div>
+          )}
+        </div>
+      )}
 
-          {/* Sections à inclure dans le rapport */}
-          <div className="w-full max-w-md rounded-lg border border-border bg-muted/30 p-4 text-start">
-            <p className="mb-1 text-sm font-semibold text-foreground">{t("export.sectionsTitle")}</p>
-            <p className="mb-3 text-xs text-muted-foreground">{t("generate.sectionsHint")}</p>
-            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-              {SECTION_ORDER.map((key) => {
-                const checked = reportSections[key];
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    disabled={isGenerating}
-                    onClick={() => toggleSection(key)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md border px-3 py-2 text-start text-xs font-medium transition-colors disabled:opacity-50",
-                      checked
-                        ? "border-secondary bg-secondary-50 text-secondary-700"
-                        : "border-border bg-white text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    <span
+      {/* ── TAB 2 : Programme sportif ── */}
+      {activeTab === "sport" && (
+        <div className="space-y-4">
+          {!nutritionResult && (
+            <Alert variant="warning" title="Étape précédente requise">
+              Générez d&apos;abord le programme alimentaire.
+            </Alert>
+          )}
+          {!sportResult ? (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-5 py-10 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white">
+                  <Dumbbell className="h-7 w-7" />
+                </div>
+                {errorSport && <Alert variant="danger" title="Erreur">{errorSport}</Alert>}
+                <Button size="lg" onClick={handleGenerateSport} disabled={isBusy || !nutritionResult} className="bg-primary hover:bg-primary-700">
+                  {isGeneratingSport ? (
+                    <><Loader2 className="h-5 w-5 animate-spin" />{t("generate.generatingSport")}</>
+                  ) : (
+                    <><Dumbbell className="h-5 w-5" />{t("generate.generateSport")}</>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground">{t("generate.langInfo")}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Badge variant="success" className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" />{t("generate.sportDone")}
+                </Badge>
+                <Button size="sm" variant="outline" onClick={handleGenerateSport} disabled={isBusy}>
+                  {isGeneratingSport ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Dumbbell className="h-4 w-4" />Régénérer</>}
+                </Button>
+              </div>
+              {errorSport && <Alert variant="danger" title="Erreur">{errorSport}</Alert>}
+              <ProgramResult program={{ analyse: nutritionResult!.analyse, nutrition: nutritionResult!.nutrition, sport: sportResult.sport }} tabs={["sport"]} />
+              <Button onClick={() => setActiveTab("export")} className="w-full">
+                <Sparkles className="h-4 w-4" />Exporter le rapport →
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB 3 : Export ── */}
+      {activeTab === "export" && (
+        <div className="space-y-4">
+          {/* Sélection des sections */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{t("export.sectionsTitle")}</CardTitle>
+              <p className="text-xs text-muted-foreground">{t("generate.sectionsHint")}</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                {SECTION_ORDER.map((key) => {
+                  const checked = reportSections[key];
+                  const isSportSection = key === "sportif";
+                  const disabled = isSportSection && !sportResult;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => !disabled && toggleSection(key)}
                       className={cn(
-                        "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border",
-                        checked ? "border-secondary bg-secondary text-white" : "border-border",
+                        "flex items-center gap-2 rounded-md border px-3 py-2 text-start text-xs font-medium transition-colors disabled:opacity-40",
+                        checked && !disabled
+                          ? "border-secondary bg-secondary-50 text-secondary-700"
+                          : "border-border bg-white text-muted-foreground hover:bg-muted",
                       )}
                     >
-                      {checked && <Check className="h-3 w-3" />}
-                    </span>
-                    {sectionTitle(key, locale)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                      <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border", checked && !disabled ? "border-secondary bg-secondary text-white" : "border-border")}>
+                        {checked && !disabled && <Check className="h-3 w-3" />}
+                      </span>
+                      {sectionTitle(key, locale)}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
-          <p className="rounded-md bg-primary-50 px-4 py-2 text-xs text-primary-700">
-            {t("generate.langInfo")}
-          </p>
+          {/* Boutons export */}
+          {(nutritionResult || program) && calc && (
+            <ExportButtons
+              form={form.getValues() as PatientForm}
+              calc={calc}
+              program={program ?? {
+                analyse: nutritionResult!.analyse,
+                nutrition: nutritionResult!.nutrition,
+                sport: sportResult?.sport ?? { niveau: "", semaines: [], consignesSecurite: [], resume: "" },
+              }}
+              generatedLocale={generatedLocale}
+              sections={reportSections}
+            />
+          )}
 
-          {error && <Alert variant="danger" title={t("alert.aggressiveTitle")}>{error}</Alert>}
-          <Button size="lg" onClick={handleGenerate} disabled={isGenerating}>
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                {t("common.generating")}
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-5 w-5" />
-                {t("common.generate")}
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+          {!nutritionResult && (
+            <Alert variant="warning" title={t("generate.exportHint")}>
+              {t("generate.exportHint")}
+            </Alert>
+          )}
+        </div>
+      )}
     </div>
   );
 }

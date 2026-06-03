@@ -95,7 +95,28 @@ export interface MedicalAnalysis {
   recommandationsGenerales: string[];
 }
 
-/** Programme complet retourné par les API IA, prêt pour le rapport/export. */
+/**
+ * Résultat de la génération nutritionnelle (nutrition + analyse médicale).
+ * Produit par /api/generate/nutrition — indépendant du sport.
+ */
+export interface NutritionResult {
+  analyse: MedicalAnalysis;
+  nutrition: NutritionProgram;
+}
+
+/**
+ * Résultat de la génération sportive.
+ * Produit par /api/generate/sport — indépendant de la nutrition.
+ */
+export interface SportResult {
+  sport: SportProgram;
+}
+
+/**
+ * Programme complet (nutrition + sport). Peut être partiel :
+ * nutrition seule, sport seul, ou les deux.
+ * Utilisé pour l'export final (Word/HTML) uniquement quand les deux sont présents.
+ */
 export interface GeneratedProgram {
   analyse: MedicalAnalysis;
   nutrition: NutritionProgram;

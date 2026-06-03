@@ -21,7 +21,8 @@ import { Step7Review } from "./steps/step7-review";
 import { Step8Generate } from "./steps/step8-generate";
 
 export function Wizard() {
-  const { step, next, prev, form, program, isGenerating } = useWizard();
+  const { step, next, prev, form, program, isGeneratingNutrition, isGeneratingSport } = useWizard();
+  const isGenerating = isGeneratingNutrition || isGeneratingSport;
   const { t, dir } = useI18n();
   const [showBanner, setShowBanner] = React.useState(false);
 

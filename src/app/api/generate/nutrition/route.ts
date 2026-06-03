@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai/openai";
-import { buildNutritionPrompt } from "@/lib/ai/prompts";
+import { buildNutritionPrompt, buildAnalysisPrompt } from "@/lib/ai/prompts";
 import { macrosInRange, macroPercents } from "@/lib/utils";
-import type { PatientForm, CalculationResult, Locale, NutritionProgram } from "@/types";
+import type {
+  PatientForm,
+  CalculationResult,
+  Locale,
+  NutritionProgram,
+  MedicalAnalysis,
+  NutritionResult,
+} from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -14,43 +21,40 @@ interface Body {
   duration?: number;
 }
 
-/** Tous les jours respectent-ils les fourchettes de macros EMC ? */
-function allDaysValid(prog: NutritionProgram): boolean {
-  return prog.plans.every((p) => macrosInRange(p.macros));
-}
-
-/** Liste lisible des écarts, pour guider la correction par l'IA. */
 function describeDeviations(prog: NutritionProgram): string {
   return prog.plans
     .filter((p) => !macrosInRange(p.macros))
     .map((p) => {
       const m = macroPercents(p.macros);
-      return `${p.jour} → P ${m.proteines}% / G ${m.glucides}% / L ${m.lipides}% (cible : P 11-15, G 50-55, L 35-40)`;
+      return `${p.jour} → P ${m.proteines}% / G ${m.glucides}% / L ${m.lipides}%`;
     })
     .join(" ; ");
 }
 
+/**
+ * Génère le programme nutritionnel ET l'analyse médicale en parallèle.
+ * Indépendant du programme sportif — évite les timeouts.
+ */
 export async function POST(req: NextRequest) {
   try {
     const { form, calc, locale, duration } = (await req.json()) as Body;
-    const days = duration === 7 || duration === 14 ? duration : 1;
-    const prompt = buildNutritionPrompt(form, calc, locale, days);
+    const days = duration === 7 ? 7 : 1;
+    const nutritionPrompt = buildNutritionPrompt(form, calc, locale, days);
+    const analysisPrompt = buildAnalysisPrompt(form, calc, locale);
 
-    const data = await generateJson<NutritionProgram>(prompt);
+    const [nutrition, analyse] = await Promise.all([
+      generateJson<NutritionProgram>(nutritionPrompt),
+      generateJson<MedicalAnalysis>(analysisPrompt),
+    ]);
 
-    // Log côté serveur si macros hors fourchette (sans retry pour éviter timeout).
-    if (!allDaysValid(data)) {
-      console.warn("[nutrition] macros hors EMC:", describeDeviations(data));
-    }
+    // Log macros hors fourchette sans bloquer.
+    const deviations = describeDeviations(nutrition);
+    if (deviations) console.warn("[nutrition] macros hors EMC:", deviations);
 
-    return NextResponse.json(data);
+    return NextResponse.json({ nutrition, analyse } satisfies NutritionResult);
   } catch (err) {
-    return handleError(err);
+    const message = err instanceof Error ? err.message : "UNKNOWN";
+    const status = message === "MISSING_OPENAI_KEY" ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
-}
-
-function handleError(err: unknown) {
-  const message = err instanceof Error ? err.message : "UNKNOWN";
-  const status = message === "MISSING_OPENAI_KEY" ? 401 : 500;
-  return NextResponse.json({ error: message }, { status });
 }
