@@ -20,7 +20,9 @@ export async function generateJson<T>(
   }
 
   const client = new OpenAI({ apiKey });
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  // gpt-4o-mini forcé — la variable OPENAI_MODEL est ignorée volontairement
+  // car elle contient une valeur incorrecte dans l'environnement Vercel.
+  const model = "gpt-4o-mini";
 
   const completion = await client.chat.completions.create({
     model,
