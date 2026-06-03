@@ -23,8 +23,10 @@ async function postJson<T>(url: string, body: Payload): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || "GENERATION_FAILED");
+    const text = await res.text().catch(() => "");
+    let msg = "GENERATION_FAILED";
+    try { msg = JSON.parse(text).error || msg; } catch { msg = text.slice(0, 200) || msg; }
+    throw new Error(`HTTP_${res.status}: ${msg}`);
   }
   return (await res.json()) as T;
 }
