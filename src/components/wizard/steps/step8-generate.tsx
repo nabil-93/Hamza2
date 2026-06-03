@@ -41,7 +41,7 @@ export function Step8Generate() {
       setProgram(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
-      setError(msg === "MISSING_OPENAI_KEY" ? t("error.noKey") : t("error.generation"));
+      setError(msg === "MISSING_OPENAI_KEY" ? t("error.noKey") : `${t("error.generation")} [${msg}]`);
     } finally {
       setIsGenerating(false);
     }
