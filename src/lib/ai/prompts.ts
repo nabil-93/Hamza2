@@ -81,6 +81,10 @@ Les calories affichées pour chaque repas DOIVENT correspondre aux quantités r�
 - La somme des calories des repas doit être égale à "caloriesTotales" du jour (~calories cible).
 - Vérifie chaque chiffre avant de répondre.
 
+== TRADITIONS CULINAIRES MAROCAINES (à respecter strictement) ==
+- Le COUSCOUS est un plat traditionnel du VENDREDI MIDI uniquement. Il n'apparaît QU'AU DÉJEUNER DU VENDREDI, et NULLE PART AILLEURS (jamais un autre jour, jamais à un autre repas, jamais en jour type).
+- Si le programme ne contient pas de vendredi (jour type, ou semaine sans vendredi), ne propose AUCUN couscous.
+
 == PRINCIPES GÉNÉRAUX ==
 - Diversité alimentaire, équilibre 421-GPL (4 portions glucides / 2 protéines / 1 lipide d'addition par repas).
 - Personnalisation, prudence, pas de carences, adhésion du patient.
@@ -163,11 +167,18 @@ export function buildNutritionPrompt(
   const jourLabel =
     duration === 1
       ? `"jour": "Jour type"`
-      : `"jour": "Jour 1", "Jour 2", … jusqu'à "Jour ${duration}"`;
+      : duration === 7
+        ? `"jour" = jour de la semaine dans l'ordre : "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"`
+        : `"jour": "Jour 1" … "Jour ${duration}"`;
+
+  const couscousRule =
+    duration >= 7
+      ? `\n- COUSCOUS : uniquement au DÉJEUNER DU VENDREDI (tradition marocaine). Jamais un autre jour, jamais à un autre repas.`
+      : ``;
 
   return `${listProfile(form, calc, locale)}
 
-TÂCHE : Génère ${dureeTexte} (~${calc.caloriesObjectif} kcal par jour), des recettes détaillées et UNE liste de courses regroupée par catégorie couvrant TOUTE la durée (${duration} jour(s)).
+TÂCHE : Génère ${dureeTexte} (~${calc.caloriesObjectif} kcal par jour), des recettes détaillées et UNE liste de courses regroupée par catégorie couvrant TOUTE la durée (${duration} jour(s)).${couscousRule}
 
 CONTRAINTES ISSUES DU RÉFÉRENTIEL EMC (à respecter impérativement) :
 - BASE OBLIGATOIRE : régime MÉDITERRANÉEN (huile d'olive, légumes, légumineuses, céréales complètes, poisson plusieurs fois/semaine, peu de viande rouge), exprimé en cuisine marocaine saine.
