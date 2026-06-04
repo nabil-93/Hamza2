@@ -98,15 +98,22 @@ export function Step8Generate() {
       }
     : null;
 
-  /** Le chat IA a modifié un jour → on met à jour le résultat nutritionnel. */
-  const handleUpdateDay = (index: number, day: DailyMealPlan) => {
-    if (!nutritionResult) return;
-    const plans = nutritionResult.nutrition.plans.map((p, i) => (i === index ? day : p));
-    setNutritionResult({
-      ...nutritionResult,
-      nutrition: { ...nutritionResult.nutrition, plans },
-    });
-  };
+  /**
+   * Le chat IA a modifié un jour → on met à jour le résultat nutritionnel.
+   * Mise à jour FONCTIONNELLE obligatoire : lors d'une modification « tous les
+   * jours », plusieurs appels arrivent en parallèle ; sans `prev`, chaque appel
+   * écraserait les précédents (stale closure) et seul le dernier jour serait gardé.
+   */
+  const handleUpdateDay = React.useCallback(
+    (index: number, day: DailyMealPlan) => {
+      setNutritionResult((prev) => {
+        if (!prev) return prev;
+        const plans = prev.nutrition.plans.map((p, i) => (i === index ? day : p));
+        return { ...prev, nutrition: { ...prev.nutrition, plans } };
+      });
+    },
+    [setNutritionResult],
+  );
 
   const tabs = [
     { id: "nutrition" as const, label: "🍽️ Nutrition", done: !!nutritionResult },

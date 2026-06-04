@@ -21,7 +21,7 @@ interface WizardContextValue {
   recompute: () => void;
   /** Résultat nutritionnel (nutrition + analyse). Null avant génération. */
   nutritionResult: NutritionResult | null;
-  setNutritionResult: (r: NutritionResult | null) => void;
+  setNutritionResult: React.Dispatch<React.SetStateAction<NutritionResult | null>>;
   /** Résultat sportif. Null avant génération. */
   sportResult: SportResult | null;
   setSportResult: (r: SportResult | null) => void;

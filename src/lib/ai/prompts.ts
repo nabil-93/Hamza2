@@ -28,7 +28,7 @@ ${JSON.stringify(jour)}
 
 DEMANDE DU MÉDECIN : « ${instruction} »
 
-Régénère CE SEUL jour en appliquant la demande. Conserve la structure des repas, respecte le régime méditerranéen et les macros (P 11-15 %, G 50-55 %, L 35-40 %).
+Régénère CE SEUL jour (« ${jour.jour} ») en appliquant la demande. Ne modifie QUE ce que demande le médecin (ex. s'il demande de changer le petit-déjeuner, ne touche pas aux autres repas). Propose quelque chose de RÉELLEMENT DIFFÉRENT de l'actuel pour la partie modifiée, adapté au jour « ${jour.jour} ». Conserve la structure des repas, respecte le régime méditerranéen et les macros (P 11-15 %, G 50-55 %, L 35-40 %).
 
 Réponds STRICTEMENT avec ce JSON (le jour complet modifié) :
 {
