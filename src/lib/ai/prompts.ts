@@ -110,6 +110,21 @@ Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité
 - Viande et équivalents : viande (125 g) / poisson (150 g) / jambon (2 tr.) / 2 œufs ≈ 180 kcal.
 - Féculents : pain (50 g) / biscottes (4) / riz-pâtes (1 assiette) / pomme de terre (1 portion) ≈ 120 kcal.
 
+== ORGANISATION HEBDOMADAIRE (programme sur une semaine) ==
+PROTÉINES :
+- Poisson : 2 fois/semaine MAX (gras : sardines/maquereau, ou blanc), de préférence au DÉJEUNER, à éviter au dîner.
+- Viande rouge : 2 repas/semaine MAX, de préférence au DÉJEUNER, à éviter au dîner.
+- Les autres jours : privilégier volaille (poulet, dinde), œufs, légumineuses, thon — la MAJORITÉ des repas protéiques.
+- Alterner les protéines : jamais le même type deux jours de suite.
+
+DÎNERS :
+- Soupes ≈ 2 fois/semaine au dîner (harira légère, soupe de légumes, chorba légère, velouté), accompagnées d'une protéine ou d'un produit laitier.
+
+RYTHME PROFESSIONNEL :
+- Déjeuners du LUNDI au VENDREDI : RAPIDES (< 30 min), simples — salades complètes, poulet/dinde grillé, omelette, thon-crudités, légumineuses simples, poisson grillé rapide, bowls, sandwichs équilibrés. ÉVITER tajines longs et plats à cuisson prolongée.
+- SAMEDI et DIMANCHE : plats traditionnels marocains plus élaborés autorisés (tajines, rfissa allégée, harira traditionnelle allégée, plats familiaux).
+- Le programme doit être réaliste pour une personne active qui travaille.
+
 == RÉGIMES SPÉCIFIQUES (à appliquer selon le profil) ==
 - Méditerranéen : régime de référence à privilégier (huile d'olive, légumes, légumineuses, poisson, fruits à coque, peu de viande rouge).
 - Obésité : régime hypocalorique MODÉRÉ (~700 kcal/repas chez la femme, ~830 chez l'homme), jamais agressif, perte ≤ 1 kg/semaine.
@@ -269,6 +284,31 @@ Le tableau "plans" DOIT contenir exactement ${duration} élément(s). Donne auss
 }
 
 /**
+ * Rôle hebdomadaire DÉTERMINISTE d'un jour (protéine du déjeuner + dîner).
+ * Réparti dans le code pour GARANTIR : poisson ≤2/sem, viande rouge ≤2/sem,
+ * soupes ≈2/sem au dîner, déjeuners rapides en semaine, plats élaborés le week-end.
+ */
+export function dayRole(jourNom: string): { lunch: string; dinner: string; pace: string } {
+  const j = jourNom.toLowerCase();
+  const ROLES: Record<string, { lunch: string; dinner: string }> = {
+    lundi: { lunch: "volaille (poulet ou dinde grillé)", dinner: "soupe légère (soupe de légumes ou velouté) + produit laitier" },
+    mardi: { lunch: "poisson gras (sardines ou maquereau) — c'est l'un des 2 jours poisson de la semaine", dinner: "œufs ou légumineuses, léger" },
+    mercredi: { lunch: "légumineuses (lentilles, pois chiches, haricots)", dinner: "volaille légère ou omelette + salade" },
+    jeudi: { lunch: "viande rouge maigre — c'est l'un des 2 jours viande rouge de la semaine", dinner: "soupe légère (chorba ou harira légère) + produit laitier" },
+    vendredi: { lunch: "couscous traditionnel marocain (tradition du vendredi midi)", dinner: "léger : thon et crudités ou œufs" },
+    samedi: { lunch: "poisson (2e et dernier jour poisson) OU plat marocain élaboré (tajine léger)", dinner: "volaille ou légumineuses" },
+    dimanche: { lunch: "plat traditionnel marocain familial élaboré (tajine, rfissa allégée, viande rouge 2e fois si pas déjà jeudi)", dinner: "léger : salade complète ou légumineuses" },
+  };
+  const role = ROLES[j] ?? { lunch: "volaille ou légumineuses", dinner: "léger" };
+  // Lundi-vendredi = rapide ; week-end = élaboré.
+  const weekend = j === "samedi" || j === "dimanche";
+  const pace = weekend
+    ? "C'est le WEEK-END : un plat marocain plus élaboré est autorisé au déjeuner."
+    : "C'est un jour de SEMAINE (travail) : le déjeuner doit être RAPIDE à préparer (< 30 min), simple. Évite les tajines longs.";
+  return { ...role, pace };
+}
+
+/**
  * Génère UN SEUL jour de menu (réponse courte → rapide).
  * Utilisé pour la génération parallèle d'une semaine (1 requête par jour).
  */
@@ -285,7 +325,7 @@ export function buildSingleDayPrompt(
 
   const couscousNote =
     jourNom.toLowerCase() === "vendredi"
-      ? `\n- C'est VENDREDI : tu peux mettre un couscous au déjeuner (tradition marocaine).`
+      ? `\n- C'est VENDREDI : couscous au déjeuner (tradition marocaine).`
       : `\n- Ce n'est PAS vendredi : AUCUN couscous.`;
 
   const eviter =
@@ -293,9 +333,18 @@ export function buildSingleDayPrompt(
       ? `\nVARIÉTÉ : ne répète pas les plats déjà utilisés les autres jours (${autresJours.join(", ")}). Propose des plats différents.`
       : ``;
 
+  // Rôle hebdomadaire du jour (seulement en mode semaine, pas en jour type).
+  const role = autresJours.length > 0 ? dayRole(jourNom) : null;
+  const roleGuidance = role
+    ? `\n\nRÔLE DE CE JOUR DANS LA SEMAINE (à respecter) :
+- Déjeuner : privilégier ${role.lunch}.
+- Dîner : ${role.dinner}.
+- ${role.pace}`
+    : ``;
+
   return `${listProfile(form, calc, locale)}
 
-TÂCHE : Génère le menu du jour « ${jourNom} » uniquement (~${calc.caloriesObjectif} kcal), conforme au régime méditerranéen et au référentiel EMC.${couscousNote}${eviter}
+TÂCHE : Génère le menu du jour « ${jourNom} » uniquement (~${calc.caloriesObjectif} kcal), conforme au régime méditerranéen et au référentiel EMC.${couscousNote}${eviter}${roleGuidance}
 
 Réponds STRICTEMENT avec ce JSON (UN seul jour) :
 {
