@@ -288,19 +288,67 @@ Le tableau "plans" DOIT contenir exactement ${duration} élément(s). Donne auss
  * Réparti dans le code pour GARANTIR : poisson ≤2/sem, viande rouge ≤2/sem,
  * soupes ≈2/sem au dîner, déjeuners rapides en semaine, plats élaborés le week-end.
  */
-export function dayRole(jourNom: string): { lunch: string; dinner: string; pace: string } {
+export function dayRole(jourNom: string): {
+  lunch: string;
+  dinner: string;
+  breakfast: string;
+  starch: string;
+  pace: string;
+} {
   const j = jourNom.toLowerCase();
-  const ROLES: Record<string, { lunch: string; dinner: string }> = {
-    lundi: { lunch: "volaille (poulet ou dinde grillé)", dinner: "soupe légère (soupe de légumes ou velouté) + produit laitier" },
-    mardi: { lunch: "poisson gras (sardines ou maquereau) — c'est l'un des 2 jours poisson de la semaine", dinner: "œufs ou légumineuses, léger" },
-    mercredi: { lunch: "légumineuses (lentilles, pois chiches, haricots)", dinner: "volaille légère ou omelette + salade" },
-    jeudi: { lunch: "viande rouge maigre — c'est l'un des 2 jours viande rouge de la semaine", dinner: "soupe légère (chorba ou harira légère) + produit laitier" },
-    vendredi: { lunch: "couscous traditionnel marocain (tradition du vendredi midi)", dinner: "léger : thon et crudités ou œufs" },
-    samedi: { lunch: "poisson (2e et dernier jour poisson) OU plat marocain élaboré (tajine léger)", dinner: "volaille ou légumineuses" },
-    dimanche: { lunch: "plat traditionnel marocain familial élaboré (tajine, rfissa allégée, viande rouge 2e fois si pas déjà jeudi)", dinner: "léger : salade complète ou légumineuses" },
+  const ROLES: Record<
+    string,
+    { lunch: string; dinner: string; breakfast: string; starch: string }
+  > = {
+    lundi: {
+      breakfast: "flocons d'avoine au lait + fruit + amandes",
+      lunch: "volaille (poulet ou dinde grillé)",
+      dinner: "soupe légère (soupe de légumes ou velouté) + produit laitier",
+      starch: "riz complet",
+    },
+    mardi: {
+      breakfast: "pain complet + œufs + fruit frais + huile d'olive",
+      lunch: "poisson gras (sardines ou maquereau) — l'un des 2 jours poisson de la semaine",
+      dinner: "œufs ou légumineuses, léger",
+      starch: "quinoa",
+    },
+    mercredi: {
+      breakfast: "msemen complet + fromage frais + fruit + noix",
+      lunch: "légumineuses (lentilles, pois chiches, haricots)",
+      dinner: "volaille légère ou omelette + salade",
+      starch: "pâtes complètes",
+    },
+    jeudi: {
+      breakfast: "pain d'orge + yaourt nature + fruit + graines",
+      lunch: "viande rouge maigre — l'un des 2 jours viande rouge de la semaine",
+      dinner: "soupe légère (chorba ou harira légère) + produit laitier",
+      starch: "boulgour ou orge",
+    },
+    vendredi: {
+      breakfast: "harcha complète + fromage blanc + fruit + amandes",
+      lunch: "couscous traditionnel marocain (tradition du vendredi midi)",
+      dinner: "léger : thon et crudités ou œufs",
+      starch: "semoule complète (couscous)",
+    },
+    samedi: {
+      breakfast: "pain complet + fromage + œuf + fruit + huile d'olive",
+      lunch: "poisson (2e et dernier jour poisson) OU plat marocain élaboré (tajine léger)",
+      dinner: "volaille ou légumineuses",
+      starch: "patate douce",
+    },
+    dimanche: {
+      breakfast: "flocons d'avoine + lait + fruits secs + miel léger",
+      lunch: "plat traditionnel marocain familial élaboré (tajine, rfissa allégée, viande rouge 2e fois si pas déjà jeudi)",
+      dinner: "léger : salade complète ou légumineuses",
+      starch: "pain complet",
+    },
   };
-  const role = ROLES[j] ?? { lunch: "volaille ou légumineuses", dinner: "léger" };
-  // Lundi-vendredi = rapide ; week-end = élaboré.
+  const role = ROLES[j] ?? {
+    breakfast: "pain complet + protéine + fruit + bonnes graisses",
+    lunch: "volaille ou légumineuses",
+    dinner: "léger",
+    starch: "féculent complet",
+  };
   const weekend = j === "samedi" || j === "dimanche";
   const pace = weekend
     ? "C'est le WEEK-END : un plat marocain plus élaboré est autorisé au déjeuner."
@@ -330,15 +378,17 @@ export function buildSingleDayPrompt(
 
   const eviter =
     autresJours.length > 0
-      ? `\nVARIÉTÉ : ne répète pas les plats déjà utilisés les autres jours (${autresJours.join(", ")}). Propose des plats différents.`
+      ? `\nVARIÉTÉ STRICTE : chaque jour de la semaine doit être TOTALEMENT DIFFÉRENT des autres (${autresJours.join(", ")}). Ne répète AUCUN plat — ni le même petit-déjeuner, ni le même déjeuner, ni le même dîner. Varie les protéines, les féculents, les légumes et les modes de cuisson.`
       : ``;
 
   // Rôle hebdomadaire du jour (seulement en mode semaine, pas en jour type).
   const role = autresJours.length > 0 ? dayRole(jourNom) : null;
   const roleGuidance = role
-    ? `\n\nRÔLE DE CE JOUR DANS LA SEMAINE (à respecter) :
+    ? `\n\nMENU IMPOSÉ DE CE JOUR (à respecter pour garantir la variété et l'équilibre hebdomadaire) :
+- Petit-déjeuner : base-toi sur ${role.breakfast} (différent des autres jours).
 - Déjeuner : privilégier ${role.lunch}.
 - Dîner : ${role.dinner}.
+- Féculent principal du jour : ${role.starch} (n'utilise PAS le même féculent que les autres jours).
 - ${role.pace}`
     : ``;
 
