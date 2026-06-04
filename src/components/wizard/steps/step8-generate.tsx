@@ -34,6 +34,13 @@ export function Step8Generate() {
   const [errorSport, setErrorSport] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState<"nutrition" | "sport" | "export">("nutrition");
 
+  // La section « Programme sportif » suit la présence du résultat sportif.
+  React.useEffect(() => {
+    setReportSections((prev) =>
+      prev.sportif === !!sportResult ? prev : { ...prev, sportif: !!sportResult },
+    );
+  }, [sportResult, setReportSections]);
+
   const handleGenerateNutrition = async () => {
     if (!calc) return;
     setErrorNutrition(null);
@@ -204,14 +211,20 @@ export function Step8Generate() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white">
                   <Dumbbell className="h-7 w-7" />
                 </div>
+                <p className="max-w-md text-sm text-muted-foreground">{t("generate.sportOptional")}</p>
                 {errorSport && <Alert variant="danger" title="Erreur">{errorSport}</Alert>}
-                <Button size="lg" onClick={handleGenerateSport} disabled={isBusy || !nutritionResult} className="bg-primary hover:bg-primary-700">
-                  {isGeneratingSport ? (
-                    <><Loader2 className="h-5 w-5 animate-spin" />{t("generate.generatingSport")}</>
-                  ) : (
-                    <><Dumbbell className="h-5 w-5" />{t("generate.generateSport")}</>
-                  )}
-                </Button>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button size="lg" onClick={handleGenerateSport} disabled={isBusy || !nutritionResult} className="bg-primary hover:bg-primary-700">
+                    {isGeneratingSport ? (
+                      <><Loader2 className="h-5 w-5 animate-spin" />{t("generate.generatingSport")}</>
+                    ) : (
+                      <><Dumbbell className="h-5 w-5" />{t("generate.generateSport")}</>
+                    )}
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={() => setActiveTab("export")} disabled={isBusy || !nutritionResult}>
+                    {t("generate.skipSport")} →
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">{t("generate.langInfo")}</p>
               </CardContent>
             </Card>

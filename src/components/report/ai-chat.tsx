@@ -24,7 +24,8 @@ interface ChatMsg {
 export function AIChat({ program, locale, onUpdateDay }: Props) {
   const { t } = useI18n();
   const plans = program.nutrition.plans;
-  const [targetIndex, setTargetIndex] = React.useState(0);
+  // "all" = tous les jours, sinon index du jour.
+  const [target, setTarget] = React.useState<"all" | number>(plans.length > 1 ? "all" : 0);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [messages, setMessages] = React.useState<ChatMsg[]>([]);
@@ -37,22 +38,27 @@ export function AIChat({ program, locale, onUpdateDay }: Props) {
   const send = async () => {
     const instruction = input.trim();
     if (!instruction || loading) return;
-    const day = plans[targetIndex];
-    if (!day) return;
 
+    // Liste des jours visés.
+    const indices = target === "all" ? plans.map((_, i) => i) : [target];
+    if (indices.length === 0) return;
+
+    const label = target === "all" ? t("chat.allDays") : plans[target]?.jour;
     setInput("");
-    setMessages((m) => [...m, { role: "user", text: `[${day.jour}] ${instruction}` }]);
+    setMessages((m) => [...m, { role: "user", text: `[${label}] ${instruction}` }]);
     setLoading(true);
     try {
-      const updated = await modifyDay(targetIndex, day, instruction, locale);
-      onUpdateDay(targetIndex, updated);
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          text: `${t("chat.updated")} « ${updated.jour} » — ${updated.caloriesTotales} kcal (P ${updated.macros.proteines} / G ${updated.macros.glucides} / L ${updated.macros.lipides} g).`,
-        },
-      ]);
+      // Modifications en parallèle (chaque jour = requête courte).
+      const results = await Promise.all(
+        indices.map((i) => modifyDay(i, plans[i], instruction, locale)),
+      );
+      results.forEach((updated, k) => onUpdateDay(indices[k], updated));
+
+      const summary =
+        results.length === 1
+          ? `${t("chat.updated")} « ${results[0].jour} » — ${results[0].caloriesTotales} kcal (P ${results[0].macros.proteines} / G ${results[0].macros.glucides} / L ${results[0].macros.lipides} g).`
+          : `${t("chat.updated")} ${results.length} ${t("chat.daysUpdated")}.`;
+      setMessages((m) => [...m, { role: "assistant", text: summary }]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       setMessages((m) => [...m, { role: "assistant", text: `${t("chat.error")} ${msg}` }]);
@@ -78,14 +84,15 @@ export function AIChat({ program, locale, onUpdateDay }: Props) {
         <p className="text-xs text-muted-foreground">{t("chat.subtitle")}</p>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-3">
-        {/* Choix du jour à modifier */}
+        {/* Choix de la cible : tous les jours ou un jour précis */}
         <div>
           <label className="text-xs font-medium text-muted-foreground">{t("chat.targetDay")}</label>
           <select
-            value={targetIndex}
-            onChange={(e) => setTargetIndex(Number(e.target.value))}
+            value={String(target)}
+            onChange={(e) => setTarget(e.target.value === "all" ? "all" : Number(e.target.value))}
             className="mt-1 w-full rounded-md border border-border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
+            {plans.length > 1 && <option value="all">⭐ {t("chat.allDays")}</option>}
             {plans.map((p, i) => (
               <option key={i} value={i}>
                 {p.jour} ({p.caloriesTotales} kcal)
