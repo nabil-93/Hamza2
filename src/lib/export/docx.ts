@@ -249,7 +249,11 @@ export async function buildDocx({ form, calc, program, locale, sections }: Repor
       );
       plan.repas.forEach((r) => {
         children.push(h(`${r.type} — ${r.nom} (${r.calories} kcal)`, HeadingLevel.HEADING_3));
-        r.ingredients.forEach((ing) => children.push(bullet(`${ing.nom} : ${ing.quantite}`)));
+        r.ingredients.forEach((ing) =>
+          children.push(
+            bullet(`${ing.nom} : ${ing.quantite}${ing.preparation ? ` (${ing.preparation})` : ""}`),
+          ),
+        );
       });
     });
   }

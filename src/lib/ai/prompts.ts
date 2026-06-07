@@ -37,7 +37,7 @@ Réponds STRICTEMENT avec ce JSON (le jour complet modifié) :
   "macros": { "proteines": number, "glucides": number, "lipides": number },
   "repas": [
     { "type": "string", "nom": "string", "calories": number,
-      "ingredients": [ { "nom": "string", "quantite": "string" } ] }
+      "ingredients": [ { "nom": "string", "quantite": "string", "preparation": "string (cru, cuit vapeur, grillé…)" } ] }
   ]
 }`;
 }
@@ -277,7 +277,7 @@ Réponds STRICTEMENT avec ce JSON :
           "type": "string (${repasStruct})",
           "nom": "string",
           "calories": number,
-          "ingredients": [ { "nom": "string", "quantite": "string (ex: 120 g)" } ]
+          "ingredients": [ { "nom": "string", "quantite": "string (ex: 120 g)", "preparation": "string (cru, cuit vapeur, grillé, bouilli, poêlé…)" } ]
         }
       ]
     }
@@ -423,10 +423,12 @@ Réponds STRICTEMENT avec ce JSON (UN seul jour) :
       "type": "string (${repasStruct})",
       "nom": "string",
       "calories": number,
-      "ingredients": [ { "nom": "string", "quantite": "string (ex: 120 g)" } ]
+      "ingredients": [ { "nom": "string", "quantite": "string (ex: 120 g)", "preparation": "string" } ]
     }
   ]
 }
+
+Pour CHAQUE ingrédient, indique son mode de préparation dans "preparation" : « cru », « cuit à la vapeur », « grillé », « bouilli », « poêlé à l'huile d'olive », « au four », « en salade (cru) », « mijoté », etc. Exemples : courgette → « cuite à la vapeur », tomate en salade → « crue », poulet → « grillé », œufs → « durs » ou « à la coque », pain → « complet ». Sois précis pour que le patient sache exactement comment préparer chaque aliment.
 
 Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
 OBLIGATOIRE : à chaque déjeuner et dîner, liste explicitement le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec sa quantité (viande/poisson/volaille/œufs/légumineuses). Le petit-déjeuner doit aussi contenir une protéine.`;

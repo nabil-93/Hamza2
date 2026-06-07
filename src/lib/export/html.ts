@@ -106,8 +106,8 @@ export function buildHtml({ form, calc, program, locale, sections }: ReportData)
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         ${m.ingredients
           .map(
-            (i: { nom: string; quantite: string }) =>
-              `<tr><td style="padding:3px 0;color:${C.muted}">${esc(i.nom)}</td><td style="padding:3px 0;text-align:${rtl ? "left" : "right"};font-weight:600">${esc(i.quantite)}</td></tr>`,
+            (i: { nom: string; quantite: string; preparation?: string }) =>
+              `<tr><td style="padding:3px 0;color:${C.muted}">${esc(i.nom)}${i.preparation ? ` <span style="background:${C.secondary}1a;color:${C.secondary};border-radius:999px;padding:1px 6px;font-size:10px">${esc(i.preparation)}</span>` : ""}</td><td style="padding:3px 0;text-align:${rtl ? "left" : "right"};font-weight:600">${esc(i.quantite)}</td></tr>`,
           )
           .join("")}
       </table>

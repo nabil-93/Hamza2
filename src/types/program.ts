@@ -9,6 +9,8 @@ export interface Macros {
 export interface MealIngredient {
   nom: string;
   quantite: string; // ex: "120 g", "1 unité"
+  /** État/mode de préparation : cru, cuit, grillé, vapeur, bouilli, poêlé… */
+  preparation?: string;
 }
 
 export interface Recipe {

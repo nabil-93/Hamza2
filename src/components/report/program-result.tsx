@@ -82,9 +82,16 @@ function NutritionTab({ program }: Props) {
                     </div>
                     <ul className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
                       {repas.ingredients.map((ing, j) => (
-                        <li key={j} className="flex justify-between gap-2">
-                          <span>{ing.nom}</span>
-                          <span className="font-medium text-foreground">{ing.quantite}</span>
+                        <li key={j} className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5">
+                            {ing.nom}
+                            {ing.preparation && (
+                              <span className="rounded-full bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700">
+                                {ing.preparation}
+                              </span>
+                            )}
+                          </span>
+                          <span className="shrink-0 font-medium text-foreground">{ing.quantite}</span>
                         </li>
                       ))}
                     </ul>
