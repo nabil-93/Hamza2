@@ -91,12 +91,14 @@ Objectif : repas rassasiant et équilibré.
 == STRUCTURE OBLIGATOIRE DU DÉJEUNER ET DU DÎNER (Tableau 8) ==
 Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justification médicale) :
 1. Crudités.
-2. Source protéique : viande maigre 100-120 g OU poisson 150-200 g (OU œufs).
+2. Source protéique OBLIGATOIRE et clairement listée dans les ingrédients avec sa quantité : viande maigre 100-120 g OU poisson 150-200 g OU volaille 120 g OU œufs OU légumineuses 150 g. AUCUN repas principal (déjeuner, dîner) sans protéine explicite.
 3. Légumes à volonté.
 4. Féculent complet (riz/pâtes/semoule/pomme de terre/légumes secs).
-5. Pain complet.
+5. Pain complet : OBLIGATOIRE à chaque déjeuner ET dîner, listé dans les ingrédients (ex. « Pain complet : 50 g »). Ne l'oublie jamais.
 6. Produit laitier (yaourt nature ou fromage).
 Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité.
+
+RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient aussi une protéine (œufs, yaourt, fromage, lait) et une source de glucides complexes (pain complet, pain d'orge, avoine, msemen complet).
 
 == REPÈRES PNNS (Tableau 6) ==
 - Fruits et légumes : au moins 5 portions/jour.
@@ -242,6 +244,7 @@ CONTRAINTES ISSUES DU RÉFÉRENTIEL EMC (à respecter impérativement) :
 - BASE OBLIGATOIRE : régime MÉDITERRANÉEN (huile d'olive, légumes, légumineuses, céréales complètes, poisson plusieurs fois/semaine, peu de viande rouge), exprimé en cuisine marocaine saine.
 - Répartition des macros CHAQUE jour : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 % de ${calc.caloriesObjectif} kcal. Calcule les grammes en conséquence.
 - Déjeuner et dîner doivent suivre la structure du repas « vertueux » : crudités/potage + viande(100-120g) ou poisson(150-200g) ou œuf + légumes verts à volonté + 1 portion de féculents + 1 tranche de pain + 1 produit laitier (yaourt/fromage).
+- OBLIGATOIRE pour CHAQUE déjeuner et dîner : lister explicitement dans les ingrédients le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec quantité. Ne les oublie jamais.
 - Au moins 5 portions de fruits/légumes sur la journée, féculents complets, 3 produits laitiers, poisson présent dans la semaine.
 - Huile d'olive/colza pour les matières grasses, sel limité, eau à volonté, sucres simples limités.${form.objectif === "perte_poids" ? "\n- Profil en perte de poids : régime hypocalorique MODÉRÉ (~700 kcal/repas femme, ~830 kcal/repas homme), jamais agressif." : ""}${duration > 1 ? `\n- VARIÉTÉ OBLIGATOIRE : ne répète pas les mêmes plats d'un jour à l'autre ; alterne poisson, légumineuses, volaille, œufs et varie les légumes et féculents sur les ${duration} jours.` : ""}
 
@@ -411,7 +414,8 @@ Réponds STRICTEMENT avec ce JSON (UN seul jour) :
   ]
 }
 
-Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.`;
+Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
+OBLIGATOIRE : à chaque déjeuner et dîner, liste explicitement le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec sa quantité (viande/poisson/volaille/œufs/légumineuses). Le petit-déjeuner doit aussi contenir une protéine.`;
 }
 
 /**
