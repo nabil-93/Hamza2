@@ -170,6 +170,20 @@ IMPORTANT : Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sa
 function listProfile(form: PatientForm, calc: CalculationResult, locale: Locale): string {
   const pref = form.preferences;
   const lang = locale === "ar" ? "arabe (langue arabe médicale professionnelle)" : "français";
+
+  // Y a-t-il au moins une préférence saisie ?
+  const aDesPreferences =
+    pref.legumes.length + pref.fruits.length + pref.proteines.length + pref.feculents.length > 0;
+
+  const consigneListe = (sel: string[], defautMaroc: string) =>
+    sel.length > 0
+      ? `${sel.join(", ")} (à privilégier en priorité)`
+      : `libre — choisis parmi les aliments les plus COURANTS, ACCESSIBLES et BON MARCHÉ au Maroc, faciles à trouver et rapides à préparer : ${defautMaroc}`;
+
+  const consignePreferences = aDesPreferences
+    ? `Le patient a indiqué des préférences : tu DOIS les respecter et baser les menus dessus en priorité.`
+    : `Le patient n'a indiqué AUCUNE préférence : compose librement avec les aliments les plus COURANTS et ACCESSIBLES au Maroc (faciles à trouver au souk/supermarché, économiques, simples à cuisiner pour une personne qui travaille). Évite les aliments rares, chers ou difficiles à trouver.`;
+
   return `LANGUE DE RÉPONSE : ${lang}.
 
 PROFIL PATIENT :
@@ -195,11 +209,11 @@ DONNÉES DIABÉTIQUES : HbA1c=${form.diabete.hba1c ?? "—"}%, Glycémie à jeun
 LIMITATIONS PHYSIQUES : ${form.limitations.join(", ") || "aucune"}
 COMMENTAIRE LIBRE LIMITATIONS (à prendre en compte impérativement, notamment si « Autre » est coché) : ${form.commentaireLimitations?.trim() || "—"}
 
-PRÉFÉRENCES ALIMENTAIRES :
-- Légumes : ${pref.legumes.join(", ") || "libre"}
-- Fruits : ${pref.fruits.join(", ") || "libre"}
-- Protéines : ${pref.proteines.join(", ") || "libre"}
-- Féculents : ${pref.feculents.join(", ") || "libre"}
+PRÉFÉRENCES ALIMENTAIRES : ${consignePreferences}
+- Légumes : ${consigneListe(pref.legumes, "tomate, courgette, oignon, carotte, poivron, haricots verts, courge, navet, blettes")}
+- Fruits : ${consigneListe(pref.fruits, "pomme, orange, banane, clémentine, pastèque/melon de saison, raisin, figue")}
+- Protéines : ${consigneListe(pref.proteines, "poulet, œufs, lentilles, pois chiches, sardines/maquereau, dinde, viande hachée maigre")}
+- Féculents : ${consigneListe(pref.feculents, "pain complet, riz, pâtes, pomme de terre, semoule, pain d'orge, légumes secs")}
 - AUTRES ALIMENTS / ALLERGIES / INTOLÉRANCES (à respecter impérativement) : ${pref.commentaire?.trim() || "—"}
 
 MODE RAMADAN : ${form.modeRamadan ? "OUI — organise le plan en Ftour, collation après Tarawih, et Shour" : "non"}
