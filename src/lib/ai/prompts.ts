@@ -82,7 +82,7 @@ C'est l'exigence prioritaire : ajuste les quantités (féculents, huile, protéi
 
 == STRUCTURE OBLIGATOIRE DU PETIT-DÉJEUNER ==
 Le petit-déjeuner ne doit JAMAIS se résumer à un yaourt + un fruit. Il DOIT contenir les 4 éléments :
-1. Glucides complexes : pain complet, pain d'orge, flocons d'avoine, msemen complet, harcha complète ou autre céréale complète.
+1. Glucides complexes : pain complet, pain d'orge, msemen complet (à l'huile d'olive), harcha complète, baghrir complet ou autre céréale complète marocaine. (N'utilise PAS de flocons d'avoine ni de quinoa.)
 2. Protéines : œufs, yaourt nature, fromage frais, lait ou fromage blanc.
 3. 1 fruit frais.
 4. Bonnes graisses : amandes, noix, graines ou huile d'olive.
@@ -98,7 +98,7 @@ Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justif
 6. Produit laitier (yaourt nature ou fromage).
 Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité.
 
-RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient aussi une protéine (œufs, yaourt, fromage, lait) et une source de glucides complexes (pain complet, pain d'orge, avoine, msemen complet).
+RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient aussi une protéine (œufs, yaourt, fromage, lait) et une source de glucides complexes (pain complet, pain d'orge, msemen complet, harcha complète). N'utilise JAMAIS de flocons d'avoine ni de quinoa.
 
 == REPÈRES PNNS (Tableau 6) ==
 - Fruits et légumes : au moins 5 portions/jour.
@@ -304,28 +304,28 @@ export function dayRole(jourNom: string): {
     { lunch: string; dinner: string; breakfast: string; starch: string }
   > = {
     lundi: {
-      breakfast: "flocons d'avoine au lait + fruit + amandes",
+      breakfast: "pain complet + fromage frais + œuf + fruit + amandes",
       lunch: "volaille (poulet ou dinde grillé)",
       dinner: "soupe légère (soupe de légumes ou velouté) + produit laitier",
       starch: "riz complet",
     },
     mardi: {
-      breakfast: "pain complet + œufs + fruit frais + huile d'olive",
+      breakfast: "pain d'orge + fromage frais + œuf + fruit + huile d'olive",
       lunch: "poisson gras (sardines ou maquereau) — l'un des 2 jours poisson de la semaine",
       dinner: "œufs ou légumineuses, léger",
-      starch: "quinoa",
-    },
-    mercredi: {
-      breakfast: "msemen complet + fromage frais + fruit + noix",
-      lunch: "légumineuses (lentilles, pois chiches, haricots)",
-      dinner: "volaille légère ou omelette + salade",
       starch: "pâtes complètes",
     },
+    mercredi: {
+      breakfast: "baghrir complet + miel léger + fromage frais + fruit + noix",
+      lunch: "légumineuses (lentilles, pois chiches, haricots)",
+      dinner: "volaille légère ou omelette + salade",
+      starch: "boulgour",
+    },
     jeudi: {
-      breakfast: "pain d'orge + yaourt nature + fruit + graines",
+      breakfast: "rghaif (msemen feuilleté) complet + yaourt nature + fruit + graines",
       lunch: "viande rouge maigre — l'un des 2 jours viande rouge de la semaine",
       dinner: "soupe légère (chorba ou harira légère) + produit laitier",
-      starch: "boulgour ou orge",
+      starch: "orge complet",
     },
     vendredi: {
       breakfast: "harcha complète + fromage blanc + fruit + amandes",
@@ -334,13 +334,13 @@ export function dayRole(jourNom: string): {
       starch: "semoule complète (couscous)",
     },
     samedi: {
-      breakfast: "pain complet + fromage + œuf + fruit + huile d'olive",
+      breakfast: "msemen complet + miel léger + yaourt nature + fruit + amandes",
       lunch: "poisson (2e et dernier jour poisson) OU plat marocain élaboré (tajine léger)",
       dinner: "volaille ou légumineuses",
       starch: "patate douce",
     },
     dimanche: {
-      breakfast: "flocons d'avoine + lait + fruits secs + miel léger",
+      breakfast: "pain complet grillé + œuf + fromage + fruit + huile d'olive",
       lunch: "plat traditionnel marocain familial élaboré (tajine, rfissa allégée, viande rouge 2e fois si pas déjà jeudi)",
       dinner: "léger : salade complète ou légumineuses",
       starch: "pain complet",
