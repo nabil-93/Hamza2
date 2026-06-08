@@ -81,12 +81,12 @@ La répartition énergétique de CHAQUE jour DOIT IMPÉRATIVEMENT respecter ces 
 C'est l'exigence prioritaire : ajuste les quantités (féculents, huile, protéines) pour que chaque jour tombe EXACTEMENT dans ces bornes. Un jour hors de ces fourchettes est une erreur à corriger.
 
 == STRUCTURE OBLIGATOIRE DU PETIT-DÉJEUNER ==
-Le petit-déjeuner ne doit JAMAIS se résumer à un yaourt + un fruit. Il DOIT contenir les 4 éléments :
+Le petit-déjeuner ne doit JAMAIS se résumer à un yaourt + un fruit. Il DOIT contenir :
 1. Glucides complexes : pain complet, pain d'orge, msemen complet (à l'huile d'olive), harcha complète, baghrir complet ou autre céréale complète marocaine. (N'utilise PAS de flocons d'avoine ni de quinoa.)
 2. Protéines : œufs, yaourt nature, fromage frais, lait ou fromage blanc.
-3. 1 fruit frais.
-4. Bonnes graisses : amandes, noix, graines ou huile d'olive.
-Objectif : repas rassasiant et équilibré.
+3. Bonnes graisses : amandes, noix, graines ou huile d'olive.
+INTERDIT au petit-déjeuner : AUCUN fruit ni dessert. Les fruits/desserts sont réservés au DÉJEUNER. Tu peux ajouter une boisson chaude (thé/café sans sucre) ou des olives.
+Objectif : repas rassasiant et équilibré, sans fruit.
 
 == STRUCTURE OBLIGATOIRE DU DÉJEUNER ET DU DÎNER (Tableau 8) ==
 Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justification médicale) :
@@ -99,11 +99,14 @@ Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justif
 Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité.
 
 == RÈGLES SPÉCIFIQUES SUPPLÉMENTAIRES ==
-- DÉJEUNER = repas PRINCIPAL de la journée (le plus complet et copieux). Il DOIT TOUJOURS se terminer par UN fruit frais (1 portion). Ne l'oublie jamais.
-- OMELETTE / ŒUFS BROUILLÉS : à placer UNIQUEMENT au petit-déjeuner OU au dîner, JAMAIS aux deux le même jour. Évite de mettre une omelette au déjeuner (réserve le déjeuner aux plats principaux : viande, poisson, volaille, légumineuses).
+- DÉJEUNER = repas PRINCIPAL de la journée (le plus complet et copieux). C'est le SEUL repas qui contient un FRUIT/DESSERT (1 portion en fin de repas). Aucun fruit ailleurs (ni petit-déjeuner, ni dîner).
+- POISSON (l7out) : 2 repas/semaine MAXIMUM, et UNIQUEMENT au DÉJEUNER. JAMAIS de poisson au dîner ni au petit-déjeuner.
+- LENTILLES (l3dess) : 1 à 2 fois/semaine MAXIMUM, et UNIQUEMENT en ACCOMPAGNEMENT (jamais comme plat principal). Le plat principal protéique doit être une viande/volaille/poisson/œufs, pas les lentilles.
+- Les autres repas alternent des protéines variées et riches : poulet, dinde, escalope de poulet, viande maigre, œufs, thon. Programme RICHE EN PROTÉINES toute la semaine.
+- OMELETTE / ŒUFS BROUILLÉS : UNIQUEMENT au petit-déjeuner OU au dîner, JAMAIS aux deux le même jour, JAMAIS au déjeuner.
 - Ne JAMAIS utiliser de quinoa ni de flocons d'avoine.
 
-RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient aussi une protéine (œufs, yaourt, fromage, lait) et une source de glucides complexes (pain complet, pain d'orge, msemen complet, harcha complète). N'utilise JAMAIS de flocons d'avoine ni de quinoa.
+RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient une protéine (œufs, yaourt, fromage, lait) et une source de glucides complexes (pain complet, pain d'orge, msemen complet, harcha complète), SANS fruit. N'utilise JAMAIS de flocons d'avoine ni de quinoa.
 
 == REPÈRES PNNS (Tableau 6) ==
 - Fruits et légumes : au moins 5 portions/jour.
@@ -323,51 +326,51 @@ export function dayRole(jourNom: string): {
     { lunch: string; dinner: string; breakfast: string; starch: string }
   > = {
     lundi: {
-      breakfast: "pain complet + fromage frais + œuf + fruit + amandes",
-      lunch: "volaille (poulet ou dinde grillé)",
+      breakfast: "pain complet + fromage frais + œuf + amandes (sans fruit)",
+      lunch: "volaille (poulet ou dinde grillé) + 1 fruit en dessert",
       dinner: "soupe légère (soupe de légumes ou velouté) + produit laitier",
       starch: "riz complet",
     },
     mardi: {
-      breakfast: "pain d'orge + fromage frais + œuf + fruit + huile d'olive",
-      lunch: "poisson gras (sardines ou maquereau) — l'un des 2 jours poisson de la semaine",
-      dinner: "œufs ou légumineuses, léger",
+      breakfast: "pain d'orge + fromage frais + œuf + huile d'olive (sans fruit)",
+      lunch: "poisson gras (sardines ou maquereau) — 1er des 2 jours poisson, UNIQUEMENT au déjeuner + 1 fruit en dessert",
+      dinner: "volaille légère (escalope de poulet ou dinde) + salade",
       starch: "pâtes complètes",
     },
     mercredi: {
-      breakfast: "baghrir complet + miel léger + fromage frais + fruit + noix",
-      lunch: "légumineuses (lentilles, pois chiches, haricots)",
-      dinner: "volaille légère ou omelette + salade",
+      breakfast: "baghrir complet + miel léger + fromage frais + noix (sans fruit)",
+      lunch: "escalope de poulet ou dinde grillée, avec lentilles en ACCOMPAGNEMENT (pas en plat principal) + 1 fruit en dessert",
+      dinner: "œufs ou volaille léger + salade",
       starch: "boulgour",
     },
     jeudi: {
-      breakfast: "rghaif (msemen feuilleté) complet + yaourt nature + fruit + graines",
-      lunch: "viande rouge maigre — l'un des 2 jours viande rouge de la semaine",
+      breakfast: "rghaif (msemen feuilleté) complet + yaourt nature + graines (sans fruit)",
+      lunch: "viande rouge maigre — l'un des 2 jours viande rouge + 1 fruit en dessert",
       dinner: "soupe légère (chorba ou harira légère) + produit laitier",
       starch: "orge complet",
     },
     vendredi: {
-      breakfast: "harcha complète + fromage blanc + fruit + amandes",
-      lunch: "couscous traditionnel marocain (tradition du vendredi midi)",
+      breakfast: "harcha complète + fromage blanc + amandes (sans fruit)",
+      lunch: "couscous traditionnel marocain (tradition du vendredi midi) + 1 fruit en dessert",
       dinner: "léger : thon et crudités ou œufs",
       starch: "semoule complète (couscous)",
     },
     samedi: {
-      breakfast: "msemen complet + miel léger + yaourt nature + fruit + amandes",
-      lunch: "poisson (2e et dernier jour poisson) OU plat marocain élaboré (tajine léger)",
-      dinner: "volaille ou légumineuses",
+      breakfast: "msemen complet + miel léger + yaourt nature + amandes (sans fruit)",
+      lunch: "poisson (2e et dernier jour poisson, UNIQUEMENT au déjeuner) OU tajine de poulet léger + 1 fruit en dessert",
+      dinner: "volaille ou viande légère",
       starch: "patate douce",
     },
     dimanche: {
-      breakfast: "pain complet grillé + œuf + fromage + fruit + huile d'olive",
-      lunch: "plat traditionnel marocain familial élaboré (tajine, rfissa allégée, viande rouge 2e fois si pas déjà jeudi)",
-      dinner: "léger : salade complète ou légumineuses",
+      breakfast: "pain complet grillé + œuf + fromage + huile d'olive (sans fruit)",
+      lunch: "plat traditionnel marocain familial élaboré (tajine de poulet/dinde, rfissa allégée, viande rouge 2e fois si pas déjà jeudi) + 1 fruit en dessert",
+      dinner: "léger : salade complète ou volaille",
       starch: "pain complet",
     },
   };
   const role = ROLES[j] ?? {
-    breakfast: "pain complet + protéine + fruit + bonnes graisses",
-    lunch: "volaille ou légumineuses",
+    breakfast: "pain complet + protéine + bonnes graisses (sans fruit)",
+    lunch: "volaille + 1 fruit en dessert",
     dinner: "léger",
     starch: "féculent complet",
   };
