@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
     const { form, calc, locale, jourNom, autresJours } = (await req.json()) as Body;
     const plan = await generateJson<DailyMealPlan>(
       buildSingleDayPrompt(form, calc, locale, jourNom, autresJours ?? []),
+      undefined,
+      0.85, // température élevée → variété entre patients
     );
     return NextResponse.json({ plan });
   } catch (err) {

@@ -1,5 +1,12 @@
 import type { PatientForm, CalculationResult, Locale, GeneratedProgram, DailyMealPlan } from "@/types";
 import { MOROCCAN_RECIPES } from "@/data/recipes";
+import {
+  PETIT_DEJ_OPTIONS,
+  DEJEUNER_PROTEINE_PAR_JOUR,
+  DINER_OPTIONS,
+  LEGUMES_AUTORISES,
+  FECULENTS_AUTORISES,
+} from "@/data/meal-bank";
 
 /** System prompt pour l'assistant de modification ciblée du programme. */
 export const CHAT_SYSTEM_PROMPT = `Tu es l'assistant nutritionniste de l'application. Le médecin te demande de MODIFIER une partie précise d'un programme déjà généré (un jour de menu, une recette, l'analyse, etc.).
@@ -89,9 +96,10 @@ INTERDIT au petit-déjeuner : AUCUN fruit ni dessert. Les fruits/desserts sont r
 Objectif : repas rassasiant et équilibré, sans fruit.
 
 == STRUCTURE OBLIGATOIRE DU DÉJEUNER ET DU DÎNER (Tableau 8) ==
+RÈGLE ABSOLUE : le DÉJEUNER et le DÎNER de CHAQUE jour DOIVENT CHACUN contenir une source de protéine animale ou végétale clairement identifiée et chiffrée. Jamais un déjeuner ni un dîner sans protéine, même quand c'est une soupe ou une salade : dans ce cas, AJOUTE une protéine (poulet, viande hachée, œuf, thon, fromage en quantité protéique, pois chiches).
 Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justification médicale) :
 1. Crudités.
-2. Source protéique OBLIGATOIRE et clairement listée dans les ingrédients avec sa quantité : viande maigre 100-120 g OU poisson 150-200 g OU volaille 120 g OU œufs OU légumineuses 150 g. AUCUN repas principal (déjeuner, dîner) sans protéine explicite.
+2. Source protéique OBLIGATOIRE et clairement listée dans les ingrédients avec sa quantité : viande maigre 100-120 g OU poisson 150-200 g OU volaille 120 g OU œufs (2) OU thon OU légumineuses 150 g. AUCUN repas principal (déjeuner, dîner) sans protéine explicite. Une soupe au dîner DOIT être accompagnée d'une protéine (ex. soupe de légumes + 2 œufs durs, ou + blanc de poulet, ou + fromage).
 3. Légumes à volonté.
 4. Féculent complet (riz/pâtes/semoule/pomme de terre/légumes secs).
 5. Pain complet : OBLIGATOIRE à chaque déjeuner ET dîner, listé dans les ingrédients (ex. « Pain complet : 50 g »). Ne l'oublie jamais.
@@ -270,6 +278,12 @@ CONTRAINTES ISSUES DU RÉFÉRENTIEL EMC (à respecter impérativement) :
 - Au moins 5 portions de fruits/légumes sur la journée, féculents complets, 3 produits laitiers, poisson présent dans la semaine.
 - Huile d'olive/colza pour les matières grasses, sel limité, eau à volonté, sucres simples limités.${form.objectif === "perte_poids" ? "\n- Profil en perte de poids : régime hypocalorique MODÉRÉ (~700 kcal/repas femme, ~830 kcal/repas homme), jamais agressif." : ""}${duration > 1 ? `\n- VARIÉTÉ OBLIGATOIRE : ne répète pas les mêmes plats d'un jour à l'autre ; alterne poisson, légumineuses, volaille, œufs et varie les légumes et féculents sur les ${duration} jours.` : ""}
 
+BANQUE DE RÉFÉRENCE (inspire-toi de ces modèles, MAIS VARIE — deux patients ne doivent jamais avoir le même programme) :
+• Petit-déjeuner (SANS fruit) : ${PETIT_DEJ_OPTIONS.slice(0, 4).join(" | ")}.
+• Déjeuner : crudités + 150 g de protéine + petit féculent (50-100 g) + 1 fruit en dessert.
+• Dîner (toujours une protéine) : ${DINER_OPTIONS.slice(0, 6).join(" | ")}.
+• Légumes autorisés : ${LEGUMES_AUTORISES.slice(0, 14).join(", ")}…
+
 La liste de courses doit ADDITIONNER les quantités de TOUS les jours (total pour ${duration} jour(s)).
 
 Réponds STRICTEMENT avec ce JSON :
@@ -328,7 +342,7 @@ export function dayRole(jourNom: string): {
     lundi: {
       breakfast: "pain complet + fromage frais + œuf + amandes (sans fruit)",
       lunch: "volaille (poulet ou dinde grillé) + 1 fruit en dessert",
-      dinner: "soupe légère (soupe de légumes ou velouté) + produit laitier",
+      dinner: "soupe de légumes + protéine OBLIGATOIRE (2 œufs durs ou blanc de poulet) + produit laitier",
       starch: "riz complet",
     },
     mardi: {
@@ -346,13 +360,13 @@ export function dayRole(jourNom: string): {
     jeudi: {
       breakfast: "rghaif (msemen feuilleté) complet + yaourt nature + graines (sans fruit)",
       lunch: "viande rouge maigre — l'un des 2 jours viande rouge + 1 fruit en dessert",
-      dinner: "soupe légère (chorba ou harira légère) + produit laitier",
+      dinner: "chorba ou harira légère + protéine OBLIGATOIRE (blanc de poulet ou pois chiches) + produit laitier",
       starch: "orge complet",
     },
     vendredi: {
       breakfast: "harcha complète + fromage blanc + amandes (sans fruit)",
       lunch: "couscous traditionnel marocain (tradition du vendredi midi) + 1 fruit en dessert",
-      dinner: "léger : thon et crudités ou œufs",
+      dinner: "thon et crudités OU œufs (protéine obligatoire) + salade",
       starch: "semoule complète (couscous)",
     },
     samedi: {
@@ -408,18 +422,28 @@ export function buildSingleDayPrompt(
 
   // Rôle hebdomadaire du jour (seulement en mode semaine, pas en jour type).
   const role = autresJours.length > 0 ? dayRole(jourNom) : null;
+  const proteineDejImposee = DEJEUNER_PROTEINE_PAR_JOUR[jourNom];
   const roleGuidance = role
-    ? `\n\nMENU IMPOSÉ DE CE JOUR (à respecter pour garantir la variété et l'équilibre hebdomadaire) :
+    ? `\n\nMENU DE CE JOUR (à respecter pour garantir la variété et l'équilibre hebdomadaire) :
 - Petit-déjeuner : base-toi sur ${role.breakfast} (différent des autres jours).
-- Déjeuner : privilégier ${role.lunch}.
+- Déjeuner : ${proteineDejImposee ? `protéine du jour = ${proteineDejImposee}` : role.lunch}.
 - Dîner : ${role.dinner}.
 - Féculent principal du jour : ${role.starch} (n'utilise PAS le même féculent que les autres jours).
 - ${role.pace}`
     : ``;
 
+  // Banque de référence (modèles du médecin) — l'IA s'en inspire et VARIE.
+  const banque = `\n\nBANQUE DE RÉFÉRENCE (inspire-toi de ces modèles du médecin, MAIS VARIE à chaque fois — ne recopie pas à l'identique) :
+• Petit-déjeuner, choisis/adapte l'une de ces propositions (SANS fruit) : ${PETIT_DEJ_OPTIONS.join(" | ")}.
+• Déjeuner : assiette de crudités/légumes + 150 g de protéine + petit féculent (50-100 g) + 1 fruit en dessert.
+• Dîner, inspire-toi de : ${DINER_OPTIONS.join(" | ")} (TOUJOURS avec une protéine).
+• Légumes autorisés (cuits ou crus, à volonté) : ${LEGUMES_AUTORISES.join(", ")}.
+• Féculents autorisés (petites portions) : ${FECULENTS_AUTORISES.join(", ")}.
+IMPORTANT : pioche et combine différemment à chaque jour et à chaque patient pour que deux programmes ne soient jamais identiques.`;
+
   return `${listProfile(form, calc, locale)}
 
-TÂCHE : Génère le menu du jour « ${jourNom} » uniquement (~${calc.caloriesObjectif} kcal), conforme au régime méditerranéen et au référentiel EMC.${couscousNote}${eviter}${roleGuidance}
+TÂCHE : Génère le menu du jour « ${jourNom} » uniquement (~${calc.caloriesObjectif} kcal), conforme au régime méditerranéen et au référentiel EMC.${couscousNote}${eviter}${roleGuidance}${banque}
 
 Réponds STRICTEMENT avec ce JSON (UN seul jour) :
 {
@@ -526,6 +550,8 @@ export function buildAnalysisPrompt(
 
 TÂCHE : Rédige une analyse médicale professionnelle et synthétique du profil.
 
+Les "recommandationsGenerales" DOIVENT inclure les aliments interdits/à limiter (style modèle médecin) : aliments transformés ; boissons gazeuses et sodas (même 0 % sucre) ; beurre ; biscuits/viennoiseries/pâtisseries (max 1×/10 jours) ; jus de fruits industriels et naturels (max 1×/semaine) ; pizzas/hamburgers (max 1×/10 jours) ; fritures ; pain blanc (uniquement pain complet) ; grignotage entre les repas. Ajoute aussi : respecter le rythme de 3 repas/jour, eau à volonté, 1 fruit/jour au déjeuner uniquement.
+
 Réponds STRICTEMENT avec ce JSON :
 {
   "resumeProfil": "string (3-4 phrases)",
@@ -533,6 +559,6 @@ Réponds STRICTEMENT avec ce JSON :
   "analyseDiabete": "string",
   "analyseNutritionnelle": "string",
   "analyseActivite": "string",
-  "recommandationsGenerales": [ "string", "string", "string" ]
+  "recommandationsGenerales": [ "string", "string", "string", "string", "string", "string" ]
 }`;
 }
