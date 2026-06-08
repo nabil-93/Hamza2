@@ -98,6 +98,11 @@ Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justif
 6. Produit laitier (yaourt nature ou fromage).
 Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité.
 
+== RÈGLES SPÉCIFIQUES SUPPLÉMENTAIRES ==
+- DÉJEUNER = repas PRINCIPAL de la journée (le plus complet et copieux). Il DOIT TOUJOURS se terminer par UN fruit frais (1 portion). Ne l'oublie jamais.
+- OMELETTE / ŒUFS BROUILLÉS : à placer UNIQUEMENT au petit-déjeuner OU au dîner, JAMAIS aux deux le même jour. Évite de mettre une omelette au déjeuner (réserve le déjeuner aux plats principaux : viande, poisson, volaille, légumineuses).
+- Ne JAMAIS utiliser de quinoa ni de flocons d'avoine.
+
 RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient aussi une protéine (œufs, yaourt, fromage, lait) et une source de glucides complexes (pain complet, pain d'orge, msemen complet, harcha complète). N'utilise JAMAIS de flocons d'avoine ni de quinoa.
 
 == REPÈRES PNNS (Tableau 6) ==
@@ -431,7 +436,8 @@ Réponds STRICTEMENT avec ce JSON (UN seul jour) :
 Pour CHAQUE ingrédient, indique son mode de préparation dans "preparation" : « cru », « cuit à la vapeur », « grillé », « bouilli », « poêlé à l'huile d'olive », « au four », « en salade (cru) », « mijoté », etc. Exemples : courgette → « cuite à la vapeur », tomate en salade → « crue », poulet → « grillé », œufs → « durs » ou « à la coque », pain → « complet ». Sois précis pour que le patient sache exactement comment préparer chaque aliment.
 
 Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
-OBLIGATOIRE : à chaque déjeuner et dîner, liste explicitement le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec sa quantité (viande/poisson/volaille/œufs/légumineuses). Le petit-déjeuner doit aussi contenir une protéine.`;
+OBLIGATOIRE : à chaque déjeuner et dîner, liste explicitement le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec sa quantité (viande/poisson/volaille/œufs/légumineuses). Le petit-déjeuner doit aussi contenir une protéine.
+RAPPELS : le DÉJEUNER est le repas principal et se termine TOUJOURS par 1 fruit frais. L'OMELETTE/œufs brouillés se mettent au petit-déjeuner OU au dîner (jamais les deux, jamais au déjeuner). PAS de quinoa ni de flocons d'avoine.`;
 }
 
 /**
