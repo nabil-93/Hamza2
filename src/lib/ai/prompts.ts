@@ -2,7 +2,6 @@ import type { PatientForm, CalculationResult, Locale, GeneratedProgram, DailyMea
 import { MOROCCAN_RECIPES } from "@/data/recipes";
 import {
   PETIT_DEJ_OPTIONS,
-  DEJEUNER_PROTEINE_PAR_JOUR,
   DINER_OPTIONS,
   LEGUMES_AUTORISES,
   FECULENTS_AUTORISES,
@@ -322,10 +321,15 @@ Réponds STRICTEMENT avec ce JSON :
 Le tableau "plans" DOIT contenir exactement ${duration} élément(s). Donne aussi 3 recettes détaillées issues de la cuisine marocaine saine, avec quantités exactes en grammes.${duration > 1 ? "\nSois CONCIS : pour gagner du temps, n'inclus QUE 3 recettes au total (pas une par jour), et garde les étapes de préparation courtes (2-4 étapes max)." : ""}`;
 }
 
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 /**
- * Rôle hebdomadaire DÉTERMINISTE d'un jour (protéine du déjeuner + dîner).
- * Réparti dans le code pour GARANTIR : poisson ≤2/sem, viande rouge ≤2/sem,
- * soupes ≈2/sem au dîner, déjeuners rapides en semaine, plats élaborés le week-end.
+ * Contraintes d'un jour. La PROTÉINE du déjeuner respecte des quotas FIXES par
+ * jour (poisson Mer+Dim, viande rouge Jeu, vendredi couscous) pour garantir
+ * poisson ≤2/sem et viande rouge ≤2/sem. Le reste (dîner, féculent, petit-déj)
+ * est tiré ALÉATOIREMENT à chaque génération → deux programmes ne se ressemblent pas.
  */
 export function dayRole(jourNom: string): {
   lunch: string;
@@ -335,58 +339,53 @@ export function dayRole(jourNom: string): {
   pace: string;
 } {
   const j = jourNom.toLowerCase();
-  const ROLES: Record<
-    string,
-    { lunch: string; dinner: string; breakfast: string; starch: string }
-  > = {
-    lundi: {
-      breakfast: "pain complet + fromage frais + œuf + amandes (sans fruit)",
-      lunch: "volaille (poulet ou dinde grillé) + 1 fruit en dessert",
-      dinner: "soupe de légumes + protéine OBLIGATOIRE (2 œufs durs ou blanc de poulet) + produit laitier",
-      starch: "riz complet",
-    },
-    mardi: {
-      breakfast: "pain d'orge + fromage frais + œuf + huile d'olive (sans fruit)",
-      lunch: "poisson gras (sardines ou maquereau) — 1er des 2 jours poisson, UNIQUEMENT au déjeuner + 1 fruit en dessert",
-      dinner: "volaille légère (escalope de poulet ou dinde) + salade",
-      starch: "pâtes complètes",
-    },
-    mercredi: {
-      breakfast: "baghrir complet + miel léger + fromage frais + noix (sans fruit)",
-      lunch: "escalope de poulet ou dinde grillée, avec lentilles en ACCOMPAGNEMENT (pas en plat principal) + 1 fruit en dessert",
-      dinner: "œufs ou volaille léger + salade",
-      starch: "boulgour",
-    },
-    jeudi: {
-      breakfast: "rghaif (msemen feuilleté) complet + yaourt nature + graines (sans fruit)",
-      lunch: "viande rouge maigre — l'un des 2 jours viande rouge + 1 fruit en dessert",
-      dinner: "chorba ou harira légère + protéine OBLIGATOIRE (blanc de poulet ou pois chiches) + produit laitier",
-      starch: "orge complet",
-    },
-    vendredi: {
-      breakfast: "harcha complète + fromage blanc + amandes (sans fruit)",
-      lunch: "couscous traditionnel marocain (tradition du vendredi midi) + 1 fruit en dessert",
-      dinner: "thon et crudités OU œufs (protéine obligatoire) + salade",
-      starch: "semoule complète (couscous)",
-    },
-    samedi: {
-      breakfast: "msemen complet + miel léger + yaourt nature + amandes (sans fruit)",
-      lunch: "poisson (2e et dernier jour poisson, UNIQUEMENT au déjeuner) OU tajine de poulet léger + 1 fruit en dessert",
-      dinner: "volaille ou viande légère",
-      starch: "patate douce",
-    },
-    dimanche: {
-      breakfast: "pain complet grillé + œuf + fromage + huile d'olive (sans fruit)",
-      lunch: "plat traditionnel marocain familial élaboré (tajine de poulet/dinde, rfissa allégée, viande rouge 2e fois si pas déjà jeudi) + 1 fruit en dessert",
-      dinner: "léger : salade complète ou volaille",
-      starch: "pain complet",
-    },
+
+  // Protéine du déjeuner : fixée pour respecter les quotas hebdomadaires.
+  const LUNCH_PROTEINE: Record<string, string> = {
+    lundi: "volaille (poulet OU dinde, grillé/au four/en tajine léger)",
+    mardi: "poisson (sardines, maquereau, thon OU merlan) — 1er des 2 jours poisson",
+    mercredi: "volaille OU escalope de poulet/dinde",
+    jeudi: "viande rouge maigre (steak, viande hachée OU brochettes) — jour viande rouge",
+    vendredi: "couscous marocain (vendredi)",
+    samedi: "poisson (2e jour poisson) OU volaille en tajine",
+    dimanche: "plat familial élaboré (tajine de poulet/dinde, rfissa allégée OU viande)",
   };
-  const role = ROLES[j] ?? {
-    breakfast: "pain complet + protéine + bonnes graisses (sans fruit)",
-    lunch: "volaille + 1 fruit en dessert",
-    dinner: "léger",
-    starch: "féculent complet",
+
+  // Petit-déjeuner : base aléatoire parmi plusieurs styles marocains (sans fruit).
+  const breakfast = pick([
+    "pain complet + œuf + fromage frais + huile d'olive",
+    "pain d'orge + fromage blanc + 1 œuf dur + olives",
+    "msemen complet + fromage frais + amandes + thé sans sucre",
+    "baghrir complet + miel léger + yaourt nature + noix",
+    "harcha complète + fromage frais + huile d'olive",
+    "rghaif complet + œuf + yaourt nature + graines",
+    "pain complet + ¼ avocat + 1 œuf + olives",
+    "bol de belboula d'orge + fromage frais + amandes",
+  ]);
+
+  // Dîner : tiré aléatoirement, TOUJOURS avec protéine.
+  const dinner = pick([
+    "soupe de légumes + 2 œufs durs + produit laitier",
+    "soupe de légumes + 150 g de poulet émincé",
+    "légumes au four + 150 g de poulet",
+    "légumes sautés + 150 g de dinde",
+    "omelette aux légumes (2 œufs) + salade",
+    "chorba légère + 150 g de poulet",
+    "velouté de légumes + 2 œufs + fromage",
+    "légumes vapeur + 150 g de fruits de mer",
+  ]);
+
+  // Féculent : tiré aléatoirement.
+  const starch = pick([
+    "riz complet", "pâtes complètes", "boulgour", "orge complet",
+    "pomme de terre", "patate douce", "semoule complète", "pain complet",
+  ]);
+
+  const role = {
+    breakfast: `${breakfast} (sans fruit)`,
+    lunch: `${LUNCH_PROTEINE[j] ?? "volaille"} + 1 fruit en dessert`,
+    dinner,
+    starch,
   };
   const weekend = j === "samedi" || j === "dimanche";
   const pace = weekend
@@ -420,21 +419,26 @@ export function buildSingleDayPrompt(
       ? `\nVARIÉTÉ STRICTE : chaque jour de la semaine doit être TOTALEMENT DIFFÉRENT des autres (${autresJours.join(", ")}). Ne répète AUCUN plat — ni le même petit-déjeuner, ni le même déjeuner, ni le même dîner. Varie les protéines, les féculents, les légumes et les modes de cuisson.`
       : ``;
 
-  // Rôle hebdomadaire du jour (seulement en mode semaine, pas en jour type).
+  // Contraintes du jour (type de protéine + rythme), SANS imposer les plats exacts
+  // → laisse à l'IA la liberté de varier réellement à chaque génération.
   const role = autresJours.length > 0 ? dayRole(jourNom) : null;
-  const proteineDejImposee = DEJEUNER_PROTEINE_PAR_JOUR[jourNom];
   const roleGuidance = role
-    ? `\n\nMENU DE CE JOUR (à respecter pour garantir la variété et l'équilibre hebdomadaire) :
-- Petit-déjeuner : base-toi sur ${role.breakfast} (différent des autres jours).
-- Déjeuner : ${proteineDejImposee ? `protéine du jour = ${proteineDejImposee}` : role.lunch}.
-- Dîner : ${role.dinner}.
-- Féculent principal du jour : ${role.starch} (n'utilise PAS le même féculent que les autres jours).
+    ? `\n\nCONTRAINTES DE CE JOUR (à respecter, mais COMPOSE librement les plats — varie le style, les recettes, les légumes, les modes de cuisson) :
+- Déjeuner : ${role.lunch} (tu peux choisir une recette marocaine différente avec cette protéine).
+- Dîner : oriente-toi vers « ${role.dinner} » mais propose un plat DIFFÉRENT et original (jamais le même qu'un autre jour).
+- Féculent principal : autour de ${role.starch}, mais libre de varier.
 - ${role.pace}`
     : ``;
 
+  // Tirage pseudo-aléatoire pour forcer la diversité d'une génération à l'autre.
+  const seed = Math.floor(Math.random() * 100000);
+  const shuffled = [...PETIT_DEJ_OPTIONS].sort(() => Math.random() - 0.5);
+
   // Banque de référence (modèles du médecin) — l'IA s'en inspire et VARIE.
-  const banque = `\n\nBANQUE DE RÉFÉRENCE (inspire-toi de ces modèles du médecin, MAIS VARIE à chaque fois — ne recopie pas à l'identique) :
-• Petit-déjeuner, choisis/adapte l'une de ces propositions (SANS fruit) : ${PETIT_DEJ_OPTIONS.join(" | ")}.
+  const banque = `\n\nVARIANTE #${seed} — compose un menu ORIGINAL et différent de toute version précédente.
+
+BANQUE DE RÉFÉRENCE (inspire-toi librement, NE recopie JAMAIS à l'identique, change l'ordre et les combinaisons) :
+• Petit-déjeuner (SANS fruit), pioche/adapte une idée parmi (dans le désordre) : ${shuffled.join(" | ")}.
 • Déjeuner : assiette de crudités/légumes + 150 g de protéine + petit féculent (50-100 g) + 1 fruit en dessert.
 • Dîner, inspire-toi de : ${DINER_OPTIONS.join(" | ")} (TOUJOURS avec une protéine).
 • Légumes autorisés (cuits ou crus, à volonté) : ${LEGUMES_AUTORISES.join(", ")}.
