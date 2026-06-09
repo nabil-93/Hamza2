@@ -223,7 +223,7 @@ export const fr = {
   "generate.dur1": "Jour type",
   "generate.dur7": "1 semaine (7 jours)",
   "generate.dur14": "2 semaines (14 jours)",
-  "generate.langInfo": "Le programme est généré dans la langue actuelle de l'interface. Vous choisirez la langue du document au moment du téléchargement.",
+  "generate.langInfo": "Le programme est généré dans la langue choisie pour le document.",
 } as const;
 
 export type TranslationKey = keyof typeof fr;

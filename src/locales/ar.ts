@@ -225,5 +225,5 @@ export const ar: Record<TranslationKey, string> = {
   "generate.dur1": "يوم نموذجي",
   "generate.dur7": "أسبوع (7 أيام)",
   "generate.dur14": "أسبوعان (14 يومًا)",
-  "generate.langInfo": "يُولَّد البرنامج بلغة الواجهة الحالية. ستختار لغة المستند عند التحميل.",
+  "generate.langInfo": "يُولَّد البرنامج باللغة المختارة للمستند.",
 };

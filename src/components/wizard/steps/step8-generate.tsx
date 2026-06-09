@@ -127,7 +127,7 @@ function ModeDayUnique() {
     program,
     isGeneratingNutrition, setIsGeneratingNutrition,
     isGeneratingSport, setIsGeneratingSport,
-    generatedLocale, setGeneratedLocale,
+    generatedLocale,
     reportSections, setReportSections,
   } = useWizard();
   const { t, locale } = useI18n();
@@ -146,9 +146,8 @@ function ModeDayUnique() {
     setError(null);
     setIsGeneratingNutrition(true);
     try {
-      const result = await generateNutrition({ form: form.getValues() as PatientForm, calc, locale, duration: 1 });
+      const result = await generateNutrition({ form: form.getValues() as PatientForm, calc, locale: generatedLocale, duration: 1 });
       setNutritionResult(result);
-      setGeneratedLocale(locale);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       setError(msg.includes("MISSING_OPENAI_KEY") ? t("error.noKey") : `${t("error.generation")} [${msg}]`);
@@ -162,9 +161,8 @@ function ModeDayUnique() {
     setErrorSport(null);
     setIsGeneratingSport(true);
     try {
-      const result = await generateSport({ form: form.getValues() as PatientForm, calc, locale });
+      const result = await generateSport({ form: form.getValues() as PatientForm, calc, locale: generatedLocale });
       setSportResult(result);
-      setGeneratedLocale(locale);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       setErrorSport(msg.includes("MISSING_OPENAI_KEY") ? t("error.noKey") : `${t("error.generation")} [${msg}]`);
@@ -352,7 +350,7 @@ function ModeSemaine() {
     weeklyAnalyse, setWeeklyAnalyse,
     activeDay, setActiveDay,
     sportResult, setSportResult,
-    generatedLocale, setGeneratedLocale,
+    generatedLocale,
     isGeneratingNutrition, setIsGeneratingNutrition,
     isGeneratingSport, setIsGeneratingSport,
     reportSections, setReportSections,
@@ -360,7 +358,6 @@ function ModeSemaine() {
   const { t, locale } = useI18n();
   const [error, setError] = React.useState<string | null>(null);
   const [errorSport, setErrorSport] = React.useState<string | null>(null);
-  const [generatingIndex, setGeneratingIndex] = React.useState<number | null>(null);
   const [view, setView] = React.useState<"programme" | "sport" | "export">("programme");
 
   React.useEffect(() => {
@@ -377,24 +374,21 @@ function ModeSemaine() {
     if (!calc || !nextJourNom) return;
     setError(null);
     setIsGeneratingNutrition(true);
-    setGeneratingIndex(nextJourIndex);
     try {
       const patientForm = form.getValues() as PatientForm;
       const historyJours = weeklyPlans.map((w) => w.plan);
       const [plan, analyse] = await Promise.all([
-        generateOneDay({ form: patientForm, calc, locale }, nextJourNom, historyJours),
-        weeklyAnalyse ? Promise.resolve(weeklyAnalyse) : generateAnalyse({ form: patientForm, calc, locale }),
+        generateOneDay({ form: patientForm, calc, locale: generatedLocale }, nextJourNom, historyJours),
+        weeklyAnalyse ? Promise.resolve(weeklyAnalyse) : generateAnalyse({ form: patientForm, calc, locale: generatedLocale }),
       ]);
       if (!weeklyAnalyse) setWeeklyAnalyse(analyse);
       setWeeklyPlans((prev) => [...prev, { jourNom: nextJourNom, plan }]);
-      setGeneratedLocale(locale);
       setActiveDay(nextJourIndex);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       setError(msg.includes("MISSING_OPENAI_KEY") ? t("error.noKey") : `${t("error.generation")} [${msg}]`);
     } finally {
       setIsGeneratingNutrition(false);
-      setGeneratingIndex(null);
     }
   };
 
@@ -412,7 +406,7 @@ function ModeSemaine() {
     setErrorSport(null);
     setIsGeneratingSport(true);
     try {
-      const result = await generateSport({ form: form.getValues() as PatientForm, calc, locale });
+      const result = await generateSport({ form: form.getValues() as PatientForm, calc, locale: generatedLocale });
       setSportResult(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
@@ -435,7 +429,7 @@ function ModeSemaine() {
             recettes: [],
             listeCourses: [],
             resumeNutritionnel:
-              locale === "ar"
+              generatedLocale === "ar"
                 ? "برنامج غذائي متوسطي لمدة أسبوع، متنوع ومتوازن."
                 : "Programme alimentaire méditerranéen sur une semaine, varié et équilibré.",
           },
@@ -494,7 +488,7 @@ function ModeSemaine() {
                 key={w.jourNom}
                 plan={w.plan}
                 form={form.getValues() as PatientForm}
-                locale={locale}
+                locale={generatedLocale}
                 dayIndex={i}
                 onUpdateDay={handleUpdateDay}
                 isActive={activeDay === i}
