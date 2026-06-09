@@ -52,12 +52,10 @@ export interface DiabetesData {
 }
 
 export interface FoodPreferences {
-  legumes: string[];
-  fruits: string[];
-  proteines: string[];
-  feculents: string[];
-  /** Texte libre : autres aliments souhaités/à éviter, allergies, intolérances. */
+  /** Texte libre : aliments aimés, habitudes, préférences culinaires. */
   commentaire?: string;
+  /** Texte libre : aliments interdits, allergies, intolérances. */
+  alimentsInterdits?: string;
 }
 
 export interface ClinicBranding {

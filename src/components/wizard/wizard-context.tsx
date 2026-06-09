@@ -60,7 +60,7 @@ const DEFAULT_VALUES: PatientFormSchema = {
   diabete: {},
   limitations: [],
   commentaireLimitations: "",
-  preferences: { legumes: [], fruits: [], proteines: [], feculents: [], commentaire: "" },
+  preferences: { commentaire: "", alimentsInterdits: "" },
   modeRamadan: false,
   branding: {},
 };

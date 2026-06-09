@@ -83,11 +83,10 @@ export const patientFormSchema = z.object({
   commentaireLimitations: z.string().optional(),
 
   preferences: z.object({
-    legumes: z.array(z.string()).default([]),
-    fruits: z.array(z.string()).default([]),
-    proteines: z.array(z.string()).default([]),
-    feculents: z.array(z.string()).default([]),
+    /** Texte libre : aliments aimés, habitudes, préférences culinaires. */
     commentaire: z.string().optional(),
+    /** Texte libre : aliments interdits, allergies, intolérances. */
+    alimentsInterdits: z.string().optional(),
   }),
   modeRamadan: z.boolean().default(false),
 

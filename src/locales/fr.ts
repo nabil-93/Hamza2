@@ -93,6 +93,12 @@ export const fr = {
   "food.notListed": "Un aliment manque dans la liste ? Tapez-le puis cliquez sur « Ajouter ».",
   "food.commentLabel": "Autres aliments, allergies ou intolérances",
   "food.commentHint": "Précisez tout aliment souhaité ou à éviter (ex. : avocat, dattes, allergie aux fruits de mer…).",
+  "food.preferencesLabel": "Préférences alimentaires",
+  "food.preferencesHint": "Aliments aimés, habitudes culinaires, plats préférés… (optionnel)",
+  "food.preferencesPlaceholder": "Ex : j'aime le poulet grillé, les légumineuses, les salades… j'évite les plats trop épicés.",
+  "food.forbiddenLabel": "Aliments interdits / Allergies / Intolérances",
+  "food.forbiddenHint": "L'IA ne les utilisera dans AUCUN repas.",
+  "food.forbiddenPlaceholder": "Ex : allergie aux œufs, intolérance au lactose, ne mange pas de bœuf, déteste le poisson…",
 
   "ramadan.label": "Programme spécial Ramadan",
   "ramadan.hint": "Le plan sera organisé en Ftour, collation après Tarawih et Shour.",

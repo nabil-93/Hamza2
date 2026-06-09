@@ -1,51 +1,59 @@
 "use client";
 
 import { Controller } from "react-hook-form";
-import { Moon } from "lucide-react";
+import { Moon, UtensilsCrossed, Heart } from "lucide-react";
 import { useWizard } from "../wizard-context";
 import { useI18n } from "@/locales";
-import { MultiSelect } from "@/components/ui/multi-select";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Field } from "../field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FOOD_DATABASE } from "@/data/foods";
 import { cn } from "@/lib/utils";
 
 export function Step6Preferences() {
   const { form } = useWizard();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { control, register } = form;
 
   return (
     <div className="space-y-6">
-      {FOOD_DATABASE.map((cat) => (
-        <div key={cat.key}>
-          <p className="mb-2 text-sm font-semibold text-foreground">
-            {locale === "ar" ? cat.labelAr : cat.labelFr}
-          </p>
-          <Controller
-            control={control}
-            name={`preferences.${cat.key}` as const}
-            render={({ field }) => (
-              <MultiSelect
-                options={cat.items.map((i) => (locale === "ar" ? i.ar : i.fr))}
-                selected={field.value ?? []}
-                onChange={field.onChange}
-                placeholder={t("common.search")}
-                selectedLabel={t("common.selected")}
-                addLabel={t("food.add")}
-              />
-            )}
-          />
+      {/* Préférences alimentaires */}
+      <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+            <Heart className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">{t("food.preferencesLabel")}</p>
+            <p className="text-xs text-muted-foreground">{t("food.preferencesHint")}</p>
+          </div>
         </div>
-      ))}
+        <Textarea
+          {...register("preferences.commentaire")}
+          placeholder={t("food.preferencesPlaceholder")}
+          rows={3}
+        />
+      </div>
 
-      {/* Commentaire libre : autres aliments, allergies, intolérances */}
-      <Field label={t("food.commentLabel")} optional={t("common.optional")} hint={t("food.commentHint")}>
-        <Textarea {...register("preferences.commentaire")} placeholder={t("food.notListed")} />
-      </Field>
+      {/* Aliments interdits / allergies */}
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-destructive/10">
+            <UtensilsCrossed className="h-4 w-4 text-destructive" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">{t("food.forbiddenLabel")}</p>
+            <p className="text-xs text-muted-foreground">{t("food.forbiddenHint")}</p>
+          </div>
+        </div>
+        <Textarea
+          {...register("preferences.alimentsInterdits")}
+          placeholder={t("food.forbiddenPlaceholder")}
+          rows={3}
+        />
+      </div>
 
+      {/* Mode Ramadan */}
       <Controller
         control={control}
         name="modeRamadan"
@@ -89,6 +97,7 @@ export function Step6Preferences() {
         )}
       />
 
+      {/* Branding cabinet */}
       <div className="rounded-lg border border-border bg-muted/30 p-4">
         <p className="mb-4 text-sm font-semibold text-foreground">{t("branding.title")}</p>
         <div className="mb-4 grid gap-4 sm:grid-cols-2">
