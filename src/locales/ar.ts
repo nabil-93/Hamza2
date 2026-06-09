@@ -193,7 +193,8 @@ export const ar: Record<TranslationKey, string> = {
   "chat.apply": "تطبيق",
   "chat.applied": "تم تطبيق التعديل",
   "meal.regenerate": "إعادة توليد هذه الوجبة",
-  "meal.undo": "الرجوع إلى الوجبة السابقة",
+  "meal.prevVersion": "النسخة السابقة",
+  "meal.nextVersion": "النسخة التالية",
   "preview.title": "معاينة التقرير",
   "preview.hint": "معاينة قابلة للتعديل — اضغط داخل النص للتعديل ثم صدِّر.",
 

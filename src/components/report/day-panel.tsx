@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check, RefreshCw, Undo2 } from "lucide-react";
+import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,14 @@ interface ChatMsg {
   proposition?: DailyMealPlan | null;
   /** True une fois la proposition appliquée (verrouille le bouton). */
   applied?: boolean;
+}
+
+/** Historique des variantes générées pour un repas + index affiché. */
+interface MealHistory {
+  /** Toutes les versions, de la plus ancienne (originale) à la plus récente. */
+  versions: Meal[];
+  /** Index de la version actuellement affichée. */
+  current: number;
 }
 
 interface Props {
@@ -36,9 +44,10 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
   const [loading, setLoading] = React.useState(false);
   const [messages, setMessages] = React.useState<ChatMsg[]>([]);
   const scrollRef = React.useRef<HTMLDivElement>(null);
-  // Régénération par repas : index en cours + sauvegarde du repas précédent (pour Annuler).
+  // Régénération par repas : index en cours de génération.
   const [regenIndex, setRegenIndex] = React.useState<number | null>(null);
-  const [prevMeals, setPrevMeals] = React.useState<Record<number, Meal>>({});
+  // Historique de versions par repas : toutes les variantes générées + version affichée.
+  const [mealHistory, setMealHistory] = React.useState<Record<number, MealHistory>>({});
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -72,14 +81,28 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
     setMessages((m) => m.map((msg, i) => (i === msgIndex ? { ...msg, applied: true } : msg)));
   };
 
-  /** Régénère UN repas : sauvegarde l'ancien (pour Annuler) puis met à jour le jour. */
+  /** Place le repas `meal` à l'index donné dans le jour et recalcule le total. */
+  const setMealAt = (mealIndex: number, meal: Meal) => {
+    const repas = plan.repas.map((r, i) => (i === mealIndex ? meal : r));
+    const caloriesTotales = repas.reduce((sum, r) => sum + (r.calories || 0), 0);
+    onUpdateDay(dayIndex, { ...plan, repas, caloriesTotales });
+  };
+
+  /** Régénère UN repas : ajoute une nouvelle variante à l'historique et l'affiche. */
   const regenMeal = async (mealIndex: number) => {
     if (regenIndex !== null) return;
     setRegenIndex(mealIndex);
-    const ancien = plan.repas[mealIndex];
+    const courant = plan.repas[mealIndex];
     try {
       const updated = await regenerateMeal(plan, mealIndex, locale, form);
-      setPrevMeals((p) => ({ ...p, [mealIndex]: ancien }));
+      const nouveau = updated.repas[mealIndex];
+      setMealHistory((h) => {
+        const prev = h[mealIndex];
+        // 1re régénération : on amorce l'historique avec [original, nouveau].
+        const base = prev?.versions ?? [courant];
+        const versions = [...base, nouveau];
+        return { ...h, [mealIndex]: { versions, current: versions.length - 1 } };
+      });
       onUpdateDay(dayIndex, updated);
     } catch {
       /* en cas d'erreur on ne touche à rien */
@@ -88,18 +111,12 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
     }
   };
 
-  /** Annule la régénération : remet l'ancien repas et recalcule le total. */
-  const undoMeal = (mealIndex: number) => {
-    const ancien = prevMeals[mealIndex];
-    if (!ancien) return;
-    const repas = plan.repas.map((r, i) => (i === mealIndex ? ancien : r));
-    const caloriesTotales = repas.reduce((sum, r) => sum + (r.calories || 0), 0);
-    onUpdateDay(dayIndex, { ...plan, repas, caloriesTotales });
-    setPrevMeals((p) => {
-      const next = { ...p };
-      delete next[mealIndex];
-      return next;
-    });
+  /** Navigue vers une autre version d'un repas (flèches ← →). */
+  const goToVersion = (mealIndex: number, target: number) => {
+    const hist = mealHistory[mealIndex];
+    if (!hist || target < 0 || target >= hist.versions.length) return;
+    setMealHistory((h) => ({ ...h, [mealIndex]: { ...hist, current: target } }));
+    setMealAt(mealIndex, hist.versions[target]);
   };
 
   const suggestions = [t("chat.sugg1"), t("chat.sugg2"), t("chat.sugg3")];
@@ -136,7 +153,9 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
           <div className="space-y-3">
             {plan.repas.map((repas, i) => {
               const isRegen = regenIndex === i;
-              const canUndo = !!prevMeals[i];
+              const hist = mealHistory[i];
+              const nVersions = hist?.versions.length ?? 0;
+              const cur = hist?.current ?? 0;
               return (
                 <div key={i} className="rounded-lg border border-border bg-white p-3">
                   <div className="mb-2 flex items-start justify-between gap-2">
@@ -147,16 +166,31 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
                     </p>
                     <div className="flex shrink-0 items-center gap-1">
                       <Badge variant="neutral">{repas.calories} kcal</Badge>
-                      {canUndo && (
-                        <button
-                          type="button"
-                          title={t("meal.undo")}
-                          onClick={() => undoMeal(i)}
-                          disabled={regenIndex !== null}
-                          className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
-                        >
-                          <Undo2 className="h-3.5 w-3.5" />
-                        </button>
+                      {/* Navigation entre versions générées (‹ 2/5 ›) */}
+                      {nVersions > 1 && (
+                        <div className="flex items-center gap-0.5 rounded-md border border-border px-1">
+                          <button
+                            type="button"
+                            title={t("meal.prevVersion")}
+                            onClick={() => goToVersion(i, cur - 1)}
+                            disabled={cur === 0 || regenIndex !== null}
+                            className="flex h-6 w-5 items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="min-w-[28px] text-center text-[11px] font-medium text-muted-foreground">
+                            {cur + 1}/{nVersions}
+                          </span>
+                          <button
+                            type="button"
+                            title={t("meal.nextVersion")}
+                            onClick={() => goToVersion(i, cur + 1)}
+                            disabled={cur === nVersions - 1 || regenIndex !== null}
+                            className="flex h-6 w-5 items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30"
+                          >
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       )}
                       <button
                         type="button"

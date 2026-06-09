@@ -191,7 +191,8 @@ export const fr = {
   "chat.apply": "Appliquer",
   "chat.applied": "Modification appliquée",
   "meal.regenerate": "Régénérer ce repas",
-  "meal.undo": "Revenir au repas précédent",
+  "meal.prevVersion": "Version précédente",
+  "meal.nextVersion": "Version suivante",
   "preview.title": "Aperçu du rapport",
   "preview.hint": "Aperçu éditable — cliquez dans le texte pour modifier, puis exportez.",
 
