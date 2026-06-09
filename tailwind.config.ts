@@ -10,8 +10,15 @@ const config: Config = {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
-      screens: { "2xl": "1400px" },
+      // Padding responsive : compact sur mobile, plus aéré sur grands écrans.
+      padding: {
+        DEFAULT: "1rem",
+        sm: "1.5rem",
+        lg: "2rem",
+        xl: "2.5rem",
+      },
+      // Exploite les grands écrans (1440 / 1600 / 1920 / ultrawide).
+      screens: { "2xl": "1800px" },
     },
     extend: {
       colors: {

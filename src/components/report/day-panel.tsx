@@ -162,7 +162,7 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
 
       {/* Contenu développé */}
       {isActive && (
-        <div className="grid gap-4 border-t border-border p-4 lg:grid-cols-2">
+        <div className="grid gap-4 border-t border-border p-4 lg:grid-cols-[1.6fr_1fr]">
           {/* Colonne gauche : repas du jour */}
           <div className="space-y-3">
             {plan.repas.map((repas, i) => {
@@ -272,13 +272,13 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
                   <div key={i} className={cn("flex flex-col gap-1", m.role === "user" ? "items-end" : "items-start")}>
                     <div className={cn("flex gap-2 text-sm", m.role === "user" ? "flex-row-reverse" : "")}>
                       {m.role === "assistant" ? <Bot className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> : <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
-                      <span className={cn("max-w-[240px] rounded-lg px-3 py-2 text-xs leading-relaxed", m.role === "user" ? "bg-primary text-white" : "bg-white text-foreground shadow-sm")}>
+                      <span className={cn("max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed", m.role === "user" ? "bg-primary text-white" : "bg-white text-foreground shadow-sm")}>
                         {m.text}
                       </span>
                     </div>
                     {/* Aperçu de la proposition + bouton Appliquer */}
                     {m.role === "assistant" && m.proposition && (
-                      <div className="ms-6 mt-1 w-full max-w-[280px]">
+                      <div className="ms-6 mt-1 w-full max-w-[360px]">
                         {/* Aperçu des repas modifiés (avant d'appliquer) */}
                         <div className="rounded-lg border border-primary/30 bg-primary-50/40 p-2.5">
                           <p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold text-primary-700">

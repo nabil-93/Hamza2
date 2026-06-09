@@ -327,9 +327,11 @@ function ModeDayUnique() {
           {exportProgram && calc && (
             <>
               <ExportButtons form={form.getValues() as PatientForm} calc={calc} program={exportProgram} generatedLocale={generatedLocale} sections={reportSections} />
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
                 <ReportPreview form={form.getValues() as PatientForm} calc={calc} program={exportProgram} locale={generatedLocale} sections={reportSections} />
-                <AIChat program={exportProgram} locale={generatedLocale} form={form.getValues() as PatientForm} onUpdateDay={handleUpdateDay} />
+                <div className="lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
+                  <AIChat program={exportProgram} locale={generatedLocale} form={form.getValues() as PatientForm} onUpdateDay={handleUpdateDay} />
+                </div>
               </div>
             </>
           )}
@@ -637,7 +639,7 @@ function ModeSemaine() {
                 generatedLocale={generatedLocale}
                 sections={reportSections}
               />
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
                 <ReportPreview
                   form={form.getValues() as PatientForm}
                   calc={calc}
@@ -645,14 +647,16 @@ function ModeSemaine() {
                   locale={generatedLocale}
                   sections={reportSections}
                 />
-                <AIChat
-                  program={exportProgram}
-                  locale={generatedLocale}
-                  form={form.getValues() as PatientForm}
-                  onUpdateDay={(index, day) =>
-                    setWeeklyPlans((prev) => prev.map((w, i) => (i === index ? { ...w, plan: day } : w)))
-                  }
-                />
+                <div className="lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
+                  <AIChat
+                    program={exportProgram}
+                    locale={generatedLocale}
+                    form={form.getValues() as PatientForm}
+                    onUpdateDay={(index, day) =>
+                      setWeeklyPlans((prev) => prev.map((w, i) => (i === index ? { ...w, plan: day } : w)))
+                    }
+                  />
+                </div>
               </div>
             </>
           )}

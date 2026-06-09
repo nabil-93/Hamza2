@@ -31,7 +31,7 @@ export default function GenerateurPage() {
         </header>
 
         <main className="container py-8">
-          <div className="mx-auto max-w-5xl">
+          <div className="mx-auto w-full max-w-screen-2xl">
             <Wizard />
           </div>
         </main>

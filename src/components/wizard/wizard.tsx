@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { STEP_FIELDS, type PatientFormSchema } from "@/lib/schema";
 import { TOTAL_STEPS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 import { Step1Info } from "./steps/step1-info";
 import { Step2Measures } from "./steps/step2-measures";
@@ -52,18 +53,28 @@ export function Wizard() {
   const PrevIcon = dir === "rtl" ? ChevronRight : ChevronLeft;
   const NextIcon = dir === "rtl" ? ChevronLeft : ChevronRight;
 
+  // L'étape 8 (génération/programme) exploite toute la largeur ; les étapes de
+  // formulaire (1-7) restent centrées dans une colonne lisible pour éviter des
+  // champs démesurément larges sur grand écran.
+  const isWide = step === 8;
+  const widthClass = isWide ? "max-w-full" : "mx-auto w-full max-w-4xl";
+
   return (
     <div className="space-y-6">
-      <Stepper />
+      <div className={widthClass}>
+        <Stepper />
+      </div>
 
       {showBanner && (
-        <Alert variant="danger" title={t("alert.aggressiveTitle")}>
-          {t("validation.incomplete")}
-        </Alert>
+        <div className={widthClass}>
+          <Alert variant="danger" title={t("alert.aggressiveTitle")}>
+            {t("validation.incomplete")}
+          </Alert>
+        </div>
       )}
 
-      <Card>
-        <CardContent className="p-6 animate-fade-in">
+      <Card className={widthClass}>
+        <CardContent className="p-6 animate-fade-in lg:p-8">
           {step === 1 && <Step1Info />}
           {step === 2 && <Step2Measures />}
           {step === 3 && <Step3Goals />}
@@ -77,7 +88,7 @@ export function Wizard() {
 
       {/* Navigation — masquée une fois le programme généré */}
       {!(step === 8 && program) && (
-        <div className="flex items-center justify-between no-print">
+        <div className={cn("flex items-center justify-between no-print", widthClass)}>
           <Button variant="outline" onClick={prev} disabled={step === 1 || isGenerating}>
             <PrevIcon className="h-4 w-4" />
             {t("common.previous")}
