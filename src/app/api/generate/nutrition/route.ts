@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai/openai";
 import { buildNutritionPrompt } from "@/lib/ai/prompts";
-import { macrosInRange, macroPercents } from "@/lib/utils";
+import { idealMacros } from "@/lib/utils";
 import type { PatientForm, CalculationResult, Locale, NutritionProgram } from "@/types";
 
 export const runtime = "nodejs";
@@ -12,16 +12,6 @@ interface Body {
   calc: CalculationResult;
   locale: Locale;
   duration?: number;
-}
-
-function describeDeviations(prog: NutritionProgram): string {
-  return prog.plans
-    .filter((p) => !macrosInRange(p.macros))
-    .map((p) => {
-      const m = macroPercents(p.macros);
-      return `${p.jour} → P ${m.proteines}% / G ${m.glucides}% / L ${m.lipides}%`;
-    })
-    .join(" ; ");
 }
 
 /** Génère UNIQUEMENT le programme alimentaire (indépendant du sport et de l'analyse). */
@@ -36,8 +26,13 @@ export async function POST(req: NextRequest) {
       locale,
     );
 
-    const deviations = describeDeviations(nutrition);
-    if (deviations) console.warn("[nutrition] macros hors EMC:", deviations);
+    // Recalcule les macros de chaque jour de façon déterministe (P 13 / G 52 / L 35)
+    // à partir des calories réelles : le modèle ne tient pas les pourcentages EMC.
+    nutrition.plans.forEach((p) => {
+      const kcal = p.caloriesTotales || p.repas.reduce((s, r) => s + (r.calories || 0), 0);
+      p.caloriesTotales = kcal;
+      p.macros = idealMacros(kcal);
+    });
 
     return NextResponse.json({ nutrition });
   } catch (err) {

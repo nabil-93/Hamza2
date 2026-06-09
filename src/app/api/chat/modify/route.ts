@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai/openai";
 import { CHAT_SYSTEM_PROMPT, buildModifyDayPrompt } from "@/lib/ai/prompts";
+import { idealMacros } from "@/lib/utils";
 import type { Locale, DailyMealPlan, PatientForm } from "@/types";
 
 export const runtime = "nodejs";
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest) {
         0.6,
         locale,
       );
+      const kcal = updated.caloriesTotales || updated.repas.reduce((s, r) => s + (r.calories || 0), 0);
+      updated.caloriesTotales = kcal;
+      updated.macros = idealMacros(kcal);
       return NextResponse.json({ kind: "day", index: target.index, data: updated });
     }
 

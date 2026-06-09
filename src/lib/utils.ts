@@ -47,3 +47,21 @@ export function macrosInRange(macros: { proteines: number; glucides: number; lip
     ok(p.lipides, MACRO_TARGETS.lipides)
   );
 }
+
+/**
+ * Répartition cible centrée dans les fourchettes EMC : P 13 %, G 52 %, L 35 %
+ * (somme = 100 %, chaque valeur dans sa fourchette). Sert à recalculer les
+ * grammes de macros de façon DÉTERMINISTE à partir des calories d'un jour,
+ * car le modèle IA ne respecte pas fiablement les pourcentages.
+ */
+export const MACRO_SPLIT = { proteines: 0.13, glucides: 0.52, lipides: 0.35 } as const;
+
+/** Convertit des calories en grammes de macros respectant pile la répartition EMC. */
+export function idealMacros(kcal: number): { proteines: number; glucides: number; lipides: number } {
+  const k = Math.max(0, kcal);
+  return {
+    proteines: Math.round((k * MACRO_SPLIT.proteines) / 4),
+    glucides: Math.round((k * MACRO_SPLIT.glucides) / 4),
+    lipides: Math.round((k * MACRO_SPLIT.lipides) / 9),
+  };
+}

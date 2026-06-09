@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/locales";
 import { discussDay, regenerateMeal, type ChatTurn } from "@/lib/ai/client";
-import { cn, macroPercents } from "@/lib/utils";
+import { cn, macroPercents, idealMacros } from "@/lib/utils";
 import type { DailyMealPlan, Meal, PatientForm, CalculationResult, Locale } from "@/types";
 
 /**
@@ -95,11 +95,11 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
     setMessages((m) => m.map((msg, i) => (i === msgIndex ? { ...msg, applied: true } : msg)));
   };
 
-  /** Place le repas `meal` à l'index donné dans le jour et recalcule le total. */
+  /** Place le repas `meal` à l'index donné, recalcule le total et fige les macros. */
   const setMealAt = (mealIndex: number, meal: Meal) => {
     const repas = plan.repas.map((r, i) => (i === mealIndex ? meal : r));
     const caloriesTotales = repas.reduce((sum, r) => sum + (r.calories || 0), 0);
-    onUpdateDay(dayIndex, { ...plan, repas, caloriesTotales });
+    onUpdateDay(dayIndex, { ...plan, repas, caloriesTotales, macros: idealMacros(caloriesTotales) });
   };
 
   /** Régénère UN repas : ajoute une nouvelle variante à l'historique et l'affiche. */

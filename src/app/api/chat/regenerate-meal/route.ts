@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai/openai";
 import { REGENERATE_MEAL_SYSTEM_PROMPT, buildRegenerateMealPrompt } from "@/lib/ai/prompts";
+import { idealMacros } from "@/lib/utils";
 import type { PatientForm, Locale, DailyMealPlan, Meal } from "@/types";
 
 export const runtime = "nodejs";
@@ -28,10 +29,10 @@ export async function POST(req: NextRequest) {
       locale,
     );
 
-    // Remplace le repas et recalcule le total calorique du jour.
+    // Remplace le repas, recalcule le total calorique du jour et fige les macros.
     const repas = jour.repas.map((r, i) => (i === mealIndex ? newMeal : r));
     const caloriesTotales = repas.reduce((sum, r) => sum + (r.calories || 0), 0);
-    const updatedJour: DailyMealPlan = { ...jour, repas, caloriesTotales };
+    const updatedJour: DailyMealPlan = { ...jour, repas, caloriesTotales, macros: idealMacros(caloriesTotales) };
 
     return NextResponse.json({ jour: updatedJour });
   } catch (err) {

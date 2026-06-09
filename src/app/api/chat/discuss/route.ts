@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai/openai";
 import { DISCUSS_SYSTEM_PROMPT, buildDiscussDayPrompt, type ChatTurn } from "@/lib/ai/prompts";
+import { idealMacros } from "@/lib/utils";
 import type { PatientForm, CalculationResult, Locale, DailyMealPlan } from "@/types";
 
 export const runtime = "nodejs";
@@ -35,9 +36,16 @@ export async function POST(req: NextRequest) {
       0.6,
       locale,
     );
+    // Si une proposition de jour est jointe, on fige ses macros (P 13/G 52/L 35).
+    const proposition = result.proposition ?? null;
+    if (proposition) {
+      const kcal = proposition.caloriesTotales || proposition.repas.reduce((s, r) => s + (r.calories || 0), 0);
+      proposition.caloriesTotales = kcal;
+      proposition.macros = idealMacros(kcal);
+    }
     return NextResponse.json({
       reponse: result.reponse ?? "",
-      proposition: result.proposition ?? null,
+      proposition,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "UNKNOWN";
