@@ -53,11 +53,10 @@ export function Wizard() {
   const PrevIcon = dir === "rtl" ? ChevronRight : ChevronLeft;
   const NextIcon = dir === "rtl" ? ChevronLeft : ChevronRight;
 
-  // L'étape 8 (génération/programme) exploite toute la largeur ; les étapes de
-  // formulaire (1-7) restent centrées dans une colonne lisible pour éviter des
-  // champs démesurément larges sur grand écran.
-  const isWide = step === 8;
-  const widthClass = isWide ? "max-w-full" : "mx-auto w-full max-w-4xl";
+  // Toutes les étapes exploitent la pleine largeur du conteneur (alignées sur le
+  // stepper). Les formulaires répartissent leurs champs sur plusieurs colonnes
+  // pour rester lisibles sans laisser de grands vides latéraux.
+  const widthClass = "w-full max-w-full";
 
   return (
     <div className="space-y-6">
@@ -75,14 +74,17 @@ export function Wizard() {
 
       <Card className={widthClass}>
         <CardContent className="p-6 animate-fade-in lg:p-8">
-          {step === 1 && <Step1Info />}
-          {step === 2 && <Step2Measures />}
-          {step === 3 && <Step3Goals />}
-          {step === 4 && <Step4Medical />}
-          {step === 5 && <Step5Limitations />}
-          {step === 6 && <Step6Preferences />}
-          {step === 7 && <Step7Review />}
-          {step === 8 && <Step8Generate />}
+          {/* Étapes 1-7 : contenu centré pour des champs lisibles ; étape 8 pleine largeur. */}
+          <div className={step === 8 ? "" : "mx-auto w-full max-w-6xl"}>
+            {step === 1 && <Step1Info />}
+            {step === 2 && <Step2Measures />}
+            {step === 3 && <Step3Goals />}
+            {step === 4 && <Step4Medical />}
+            {step === 5 && <Step5Limitations />}
+            {step === 6 && <Step6Preferences />}
+            {step === 7 && <Step7Review />}
+            {step === 8 && <Step8Generate />}
+          </div>
         </CardContent>
       </Card>
 
