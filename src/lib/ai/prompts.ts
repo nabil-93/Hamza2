@@ -666,8 +666,6 @@ export function buildSingleDayPrompt(
     memoireBlock = `
 
 MÉMOIRE DE LA SEMAINE (jours déjà générés — NE PAS RÉPÉTER les mêmes plats) :
-${historyJours.map((j) => `• ${j.jour} : ${j.repas.map((r) => `${r.type}=${r.nom}`).join(", ")}`).join("\n")}
-
 Déjeuners déjà utilisés (protéines) : ${proteinesUsees.join(" | ") || "aucun"}
 Petits-déjeuners déjà utilisés : ${petitDejUsees.join(" | ") || "aucun"}
 Dîners déjà utilisés : ${dinerUsees.join(" | ") || "aucun"}
@@ -695,17 +693,20 @@ RÈGLE ABSOLUE : le menu de « ${jourNom} » doit être ENTIÈREMENT DIFFÉRENT 
 
   // Tirage pseudo-aléatoire pour forcer la diversité d'une génération à l'autre.
   const seed = Math.floor(Math.random() * 100000);
-  const shuffled = [...PETIT_DEJ_OPTIONS].sort(() => Math.random() - 0.5);
+  const shuffled = [...PETIT_DEJ_OPTIONS].sort(() => Math.random() - 0.5).slice(0, 3);
+  const dinerSample = [...DINER_OPTIONS].sort(() => Math.random() - 0.5).slice(0, 3);
+  const legumesSample = [...LEGUMES_AUTORISES].sort(() => Math.random() - 0.5).slice(0, 8);
+  const feculentsSample = [...FECULENTS_AUTORISES].sort(() => Math.random() - 0.5).slice(0, 4);
 
   // Banque de référence (modèles du médecin) — l'IA s'en inspire et VARIE.
   const banque = `\n\nVARIANTE #${seed} — compose un menu ORIGINAL et différent de toute version précédente.
 
-BANQUE DE RÉFÉRENCE (inspire-toi librement, NE recopie JAMAIS à l'identique, change l'ordre et les combinaisons) :
-• Petit-déjeuner (SANS fruit), pioche/adapte une idée parmi (dans le désordre) : ${shuffled.join(" | ")}.
+EXEMPLES D'INSPIRATION (NE recopie JAMAIS à l'identique, change l'ordre et les combinaisons) :
+• Petit-déjeuner (SANS fruit), exemples : ${shuffled.join(" | ")}.
 • Déjeuner : assiette de crudités/légumes + 150 g de protéine + petit féculent (50-100 g) + 1 fruit en dessert.
-• Dîner, inspire-toi de : ${DINER_OPTIONS.join(" | ")} (TOUJOURS avec une protéine).
-• Légumes autorisés (cuits ou crus, à volonté) : ${LEGUMES_AUTORISES.join(", ")}.
-• Féculents autorisés (petites portions) : ${FECULENTS_AUTORISES.join(", ")}.
+• Dîner, exemples : ${dinerSample.join(" | ")} (TOUJOURS avec une protéine).
+• Légumes (cuits ou crus, à volonté), exemples : ${legumesSample.join(", ")}, etc.
+• Féculents complets (petites portions), exemples : ${feculentsSample.join(", ")}, etc.
 IMPORTANT : pioche et combine différemment à chaque jour et à chaque patient pour que deux programmes ne soient jamais identiques.`;
 
   return `${listProfile(form, calc, locale)}${buildPatientConstraints(form)}${memoireBlock}
