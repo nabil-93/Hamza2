@@ -1,33 +1,36 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/locales";
-import { modifyDay } from "@/lib/ai/client";
+import { discussDay, type ChatTurn } from "@/lib/ai/client";
 import { cn } from "@/lib/utils";
-import type { DailyMealPlan, PatientForm, Locale } from "@/types";
+import type { DailyMealPlan, PatientForm, CalculationResult, Locale } from "@/types";
 
 interface ChatMsg {
   role: "user" | "assistant";
   text: string;
+  /** Proposition de jour modifié jointe à un message assistant (le cas échéant). */
+  proposition?: DailyMealPlan | null;
+  /** True une fois la proposition appliquée (verrouille le bouton). */
+  applied?: boolean;
 }
 
 interface Props {
   plan: DailyMealPlan;
   form: PatientForm;
+  calc: CalculationResult;
   locale: Locale;
-  /** Index dans weeklyPlans — pour onUpdateDay */
   dayIndex: number;
   onUpdateDay: (index: number, day: DailyMealPlan) => void;
-  /** Si true, le panel est le jour actif (développé) */
   isActive: boolean;
   onActivate: () => void;
 }
 
-export function DayPanel({ plan, form, locale, dayIndex, onUpdateDay, isActive, onActivate }: Props) {
+export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isActive, onActivate }: Props) {
   const { t } = useI18n();
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -39,22 +42,31 @@ export function DayPanel({ plan, form, locale, dayIndex, onUpdateDay, isActive, 
   }, [messages, loading]);
 
   const send = async () => {
-    const instruction = input.trim();
-    if (!instruction || loading) return;
+    const message = input.trim();
+    if (!message || loading) return;
     setInput("");
-    setMessages((m) => [...m, { role: "user", text: instruction }]);
+    // Historique (mémoire) = échanges précédents, sans les propositions JSON.
+    const history: ChatTurn[] = messages.map((m) => ({ role: m.role, content: m.text }));
+    setMessages((m) => [...m, { role: "user", text: message }]);
     setLoading(true);
     try {
-      const updated = await modifyDay(dayIndex, plan, instruction, locale, form);
-      onUpdateDay(dayIndex, updated);
-      const summary = `✅ ${plan.jour} mis à jour — ${updated.caloriesTotales} kcal (P ${updated.macros.proteines}g · G ${updated.macros.glucides}g · L ${updated.macros.lipides}g)`;
-      setMessages((m) => [...m, { role: "assistant", text: summary }]);
+      const res = await discussDay(plan, message, locale, form, calc, history);
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", text: res.reponse, proposition: res.proposition, applied: false },
+      ]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       setMessages((m) => [...m, { role: "assistant", text: `❌ Erreur : ${msg}` }]);
     } finally {
       setLoading(false);
     }
+  };
+
+  /** Applique une proposition au jour et verrouille le bouton du message concerné. */
+  const apply = (msgIndex: number, proposition: DailyMealPlan) => {
+    onUpdateDay(dayIndex, proposition);
+    setMessages((m) => m.map((msg, i) => (i === msgIndex ? { ...msg, applied: true } : msg)));
   };
 
   const suggestions = [t("chat.sugg1"), t("chat.sugg2"), t("chat.sugg3")];
@@ -118,23 +130,23 @@ export function DayPanel({ plan, form, locale, dayIndex, onUpdateDay, isActive, 
             ))}
           </div>
 
-          {/* Colonne droite : chat IA pour ce jour */}
+          {/* Colonne droite : chat conversationnel pour ce jour */}
           <Card className="flex flex-col">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <Wand2 className="h-4 w-4 text-primary" />
-                Modifier {plan.jour}
+                {t("chat.discussTitle")} {plan.jour}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-2">
               <div
                 ref={scrollRef}
-                className="min-h-[140px] flex-1 space-y-2 overflow-y-auto rounded-md border border-border bg-muted/20 p-3"
+                className="min-h-[180px] max-h-[340px] flex-1 space-y-2 overflow-y-auto rounded-md border border-border bg-muted/20 p-3"
               >
                 {messages.length === 0 && (
                   <div className="flex flex-col items-center gap-2 py-4 text-center text-muted-foreground">
                     <Sparkles className="h-5 w-5 text-primary/40" />
-                    <p className="text-xs">{t("chat.empty")}</p>
+                    <p className="text-xs">{t("chat.discussEmpty")}</p>
                     <div className="mt-1 flex flex-wrap justify-center gap-1">
                       {suggestions.map((s, i) => (
                         <button
@@ -150,12 +162,31 @@ export function DayPanel({ plan, form, locale, dayIndex, onUpdateDay, isActive, 
                   </div>
                 )}
                 {messages.map((m, i) => (
-                  <div key={i} className={cn("flex gap-2 text-sm", m.role === "user" ? "justify-end" : "justify-start")}>
-                    {m.role === "assistant" && <Bot className="mt-0.5 h-4 w-4 shrink-0 text-primary" />}
-                    <span className={cn("max-w-[85%] rounded-lg px-3 py-2 text-xs", m.role === "user" ? "bg-primary text-white" : "bg-white text-foreground shadow-sm")}>
-                      {m.text}
-                    </span>
-                    {m.role === "user" && <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                  <div key={i} className={cn("flex flex-col gap-1", m.role === "user" ? "items-end" : "items-start")}>
+                    <div className={cn("flex gap-2 text-sm", m.role === "user" ? "flex-row-reverse" : "")}>
+                      {m.role === "assistant" ? <Bot className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> : <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                      <span className={cn("max-w-[240px] rounded-lg px-3 py-2 text-xs leading-relaxed", m.role === "user" ? "bg-primary text-white" : "bg-white text-foreground shadow-sm")}>
+                        {m.text}
+                      </span>
+                    </div>
+                    {/* Bouton Appliquer si l'IA a joint une proposition */}
+                    {m.role === "assistant" && m.proposition && (
+                      <div className="ms-6 mt-1">
+                        {m.applied ? (
+                          <Badge variant="success" className="flex items-center gap-1 text-[11px]">
+                            <Check className="h-3 w-3" />{t("chat.applied")}
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => apply(i, m.proposition!)}
+                            className="h-7 gap-1 text-[11px]"
+                          >
+                            <Check className="h-3.5 w-3.5" />{t("chat.apply")} ({m.proposition.caloriesTotales} kcal)
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {loading && (
@@ -170,7 +201,7 @@ export function DayPanel({ plan, form, locale, dayIndex, onUpdateDay, isActive, 
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && send()}
-                  placeholder={t("chat.placeholder")}
+                  placeholder={t("chat.discussPlaceholder")}
                   disabled={loading}
                   className="h-9 flex-1 rounded-md border border-border bg-white px-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 />

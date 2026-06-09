@@ -484,16 +484,19 @@ function ModeSemaine() {
           {/* Jours déjà générés */}
           <div className="space-y-3">
             {weeklyPlans.map((w, i) => (
-              <DayPanel
-                key={w.jourNom}
-                plan={w.plan}
-                form={form.getValues() as PatientForm}
-                locale={generatedLocale}
-                dayIndex={i}
-                onUpdateDay={handleUpdateDay}
-                isActive={activeDay === i}
-                onActivate={() => setActiveDay(activeDay === i ? -1 : i)}
-              />
+              calc && (
+                <DayPanel
+                  key={w.jourNom}
+                  plan={w.plan}
+                  form={form.getValues() as PatientForm}
+                  calc={calc}
+                  locale={generatedLocale}
+                  dayIndex={i}
+                  onUpdateDay={handleUpdateDay}
+                  isActive={activeDay === i}
+                  onActivate={() => setActiveDay(activeDay === i ? -1 : i)}
+                />
+              )
             ))}
           </div>
 

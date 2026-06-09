@@ -187,6 +187,11 @@ export const ar: Record<TranslationKey, string> = {
   "chat.sugg1": "مزيد من السمك",
   "chat.sugg2": "وجبة أخف (~1600 سعرة)",
   "chat.sugg3": "استبدل اللحم الأحمر",
+  "chat.discussTitle": "نقاش —",
+  "chat.discussEmpty": "اطرح سؤالًا أو اطلب تعديلًا. يجيب الذكاء الاصطناعي، ويقترح زر «تطبيق» إذا اقترح تغييرًا.",
+  "chat.discussPlaceholder": "مثال: هل هذا الغداء مناسب؟ أو: استبدل الدجاج بالسمك",
+  "chat.apply": "تطبيق",
+  "chat.applied": "تم تطبيق التعديل",
   "preview.title": "معاينة التقرير",
   "preview.hint": "معاينة قابلة للتعديل — اضغط داخل النص للتعديل ثم صدِّر.",
 

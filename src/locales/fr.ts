@@ -185,6 +185,11 @@ export const fr = {
   "chat.sugg1": "Plus de poisson",
   "chat.sugg2": "Repas plus léger (~1600 kcal)",
   "chat.sugg3": "Remplace la viande rouge",
+  "chat.discussTitle": "Discuter —",
+  "chat.discussEmpty": "Posez une question ou demandez une modification. L'IA répond, et propose un bouton « Appliquer » si elle suggère un changement.",
+  "chat.discussPlaceholder": "Ex : ce déjeuner est-il adapté ? ou : remplace le poulet par du poisson",
+  "chat.apply": "Appliquer",
+  "chat.applied": "Modification appliquée",
   "preview.title": "Aperçu du rapport",
   "preview.hint": "Aperçu éditable — cliquez dans le texte pour modifier, puis exportez.",
 

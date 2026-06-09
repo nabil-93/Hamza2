@@ -17,6 +17,29 @@ Règles :
 - Le couscous reste réservé au vendredi midi.
 - Réponds UNIQUEMENT avec l'objet JSON demandé, sans texte ni balises markdown.`;
 
+/** System prompt pour l'assistant CONVERSATIONNEL (discussion + proposition). */
+export const DISCUSS_SYSTEM_PROMPT = `Tu es un nutritionniste assistant qui DISCUTE avec un médecin à propos d'un jour de menu déjà généré.
+
+Tu fonctionnes comme un vrai collègue : tu réponds à ses questions, tu donnes ton avis, tu expliques tes choix, tu proposes des alternatives. Tu es naturel, concis et professionnel.
+
+DEUX TYPES D'ÉCHANGES :
+1. QUESTION / DISCUSSION (« qu'en penses-tu ? », « pourquoi ce plat ? », « est-ce adapté au diabète ? », « propose-moi autre chose pour le dîner ») → tu réponds par du TEXTE clair. Tu peux suggérer une idée de modification dans ta réponse, mais tu n'appliques RIEN.
+2. DEMANDE D'APPLICATION (« remplace le déjeuner par X », « applique », « modifie le petit-déjeuner », « mets du poisson au lieu du poulet », « baisse à 1600 kcal ») → là tu PRÉPARES la version modifiée complète du jour ET tu l'inclus dans le champ "proposition".
+
+RÈGLES MÉTIER (à respecter dans toute proposition) :
+- Régime méditerranéen, cuisine marocaine saine.
+- Macros EMC : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
+- Déjeuner et dîner : protéine explicite + pain complet listés. Petit-déjeuner sans fruit. Déjeuner = seul repas avec 1 fruit. Couscous = vendredi midi uniquement. Pas de quinoa ni d'avoine.
+- Garde les calories actuelles sauf demande contraire.
+
+FORMAT DE RÉPONSE — réponds TOUJOURS avec cet objet JSON (sans texte ni markdown autour) :
+{
+  "reponse": "ta réponse en langage naturel au médecin (toujours présente)",
+  "proposition": null | { jour complet modifié, même structure que le menu fourni }
+}
+- "proposition" vaut null pour une simple discussion ou question.
+- "proposition" contient le jour modifié UNIQUEMENT quand le médecin demande explicitement une modification/application. Dans ce cas, "reponse" décrit en une phrase ce que tu as changé.`;
+
 /**
  * Modifie UN jour de menu selon une instruction libre du médecin.
  * Renvoie le jour complet modifié (même structure DailyMealPlan).
@@ -47,6 +70,61 @@ Réponds STRICTEMENT avec ce JSON (le jour complet modifié) :
     { "type": "string", "nom": "string", "calories": number,
       "ingredients": [ { "nom": "string", "quantite": "string", "preparation": "string (cru, cuit vapeur, grillé…)" } ] }
   ]
+}`;
+}
+
+/** Un tour de conversation du chat (mémoire). */
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/**
+ * Construit le prompt de DISCUSSION sur un jour : l'IA répond en langage naturel
+ * et n'inclut une proposition de jour modifié QUE si le médecin le demande.
+ * history = échanges précédents (l'IA garde le contexte).
+ */
+export function buildDiscussDayPrompt(
+  jour: DailyMealPlan,
+  message: string,
+  locale: Locale,
+  form: PatientForm,
+  calc: CalculationResult,
+  history: ChatTurn[] = [],
+): string {
+  const lang = locale === "ar" ? "arabe (arabe médical professionnel)" : "français";
+  const contraintes = buildPatientConstraints(form);
+
+  const historyBlock =
+    history.length > 0
+      ? `\n\nHISTORIQUE DE LA CONVERSATION (garde ce contexte) :\n${history
+          .map((h) => `${h.role === "user" ? "MÉDECIN" : "TOI"} : ${h.content}`)
+          .join("\n")}`
+      : "";
+
+  return `LANGUE DE RÉPONSE : ${lang}.${contraintes}
+
+CONTEXTE PATIENT : objectif ${form.objectif}, ~${calc.caloriesObjectif} kcal/jour, IMC ${calc.imc} (${calc.imcCategorie}), pathologies : ${form.pathologies.join(", ") || "aucune"}.
+
+JOUR EN COURS DE DISCUSSION (« ${jour.jour} ») — menu actuel :
+${JSON.stringify(jour)}${historyBlock}
+
+NOUVEAU MESSAGE DU MÉDECIN : « ${message} »
+
+Réponds comme un collègue nutritionniste. Si c'est une question/discussion → réponds par du texte, "proposition" = null. Si le médecin demande une modification du jour → applique-la dans "proposition" (jour complet, même structure, avec "preparation" par ingrédient) et résume le changement dans "reponse".
+
+Réponds STRICTEMENT avec ce JSON :
+{
+  "reponse": "string",
+  "proposition": null | {
+    "jour": "${jour.jour}",
+    "caloriesTotales": number,
+    "macros": { "proteines": number, "glucides": number, "lipides": number },
+    "repas": [
+      { "type": "string", "nom": "string", "calories": number,
+        "ingredients": [ { "nom": "string", "quantite": "string", "preparation": "string" } ] }
+    ]
+  }
 }`;
 }
 

@@ -156,6 +156,40 @@ export async function modifyDay(
   return res.data;
 }
 
+/** Un tour de conversation du chat. */
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/** Résultat d'un échange : réponse texte + proposition optionnelle de jour modifié. */
+export interface DiscussResult {
+  reponse: string;
+  proposition: DailyMealPlan | null;
+}
+
+/**
+ * DISCUTE avec l'IA à propos d'un jour. L'IA répond par du texte ;
+ * elle ne renvoie une proposition de jour modifié que si on le lui demande.
+ */
+export async function discussDay(
+  day: DailyMealPlan,
+  message: string,
+  locale: Locale,
+  form: PatientForm,
+  calc: CalculationResult,
+  history: ChatTurn[],
+): Promise<DiscussResult> {
+  return postRaw<DiscussResult>("/api/chat/discuss", {
+    jour: day,
+    message,
+    locale,
+    form,
+    calc,
+    history,
+  });
+}
+
 // Traduction (cache en mémoire de session).
 const translationCache = new Map<string, GeneratedProgram>();
 
