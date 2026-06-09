@@ -217,18 +217,21 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
                       </button>
                     </div>
                   </div>
-                  <ul className={cn("grid gap-1 text-xs text-muted-foreground sm:grid-cols-2", isRegen && "opacity-40")}>
+                  <ul className={cn("grid gap-x-6 gap-y-1.5 text-xs text-muted-foreground sm:grid-cols-2", isRegen && "opacity-40")}>
                     {repas.ingredients.map((ing, j) => (
-                      <li key={j} className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-1.5">
-                          {ing.nom}
+                      <li
+                        key={j}
+                        className="flex items-center justify-between gap-3 border-b border-dashed border-border/60 pb-1.5 last:border-0 last:pb-0"
+                      >
+                        <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                          <span className="truncate">{ing.nom}</span>
                           {ing.preparation && (
-                            <span className="rounded-full bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700">
+                            <span className="shrink-0 rounded-full bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700">
                               {ing.preparation}
                             </span>
                           )}
                         </span>
-                        <span className="shrink-0 font-medium text-foreground">{ing.quantite}</span>
+                        <span className="shrink-0 whitespace-nowrap font-semibold text-foreground">{ing.quantite}</span>
                       </li>
                     ))}
                   </ul>

@@ -9,8 +9,20 @@ import type { Locale } from "@/types";
  */
 function langDirective(locale?: Locale): string {
   if (locale === "ar") {
-    return `⚠️ RÈGLE ABSOLUE DE LANGUE — PRIORITÉ MAXIMALE :
-Tu DOIS rédiger TOUTES les valeurs textuelles de ta réponse JSON en ARABE (arabe standard, terminologie médicale et nutritionnelle professionnelle). Cela inclut : noms des plats, des repas, des ingrédients, modes de préparation, résumés, recommandations, et tout texte. NE laisse AUCUN texte en français (sauf unités universelles : g, kg, kcal, L). Les clés JSON restent en anglais/technique. Si tu réponds en français, c'est une ERREUR grave.
+    return `⚠️ RÈGLE ABSOLUE DE LANGUE — PRIORITÉ MAXIMALE (FORMAT BILINGUE AR + FR) :
+Tu DOIS rédiger TOUTES les valeurs textuelles de ta réponse JSON en ARABE D'ABORD, SUIVI de la traduction française entre parenthèses. Format obligatoire : « النص بالعربية (texte en français) ».
+Cela s'applique à TOUT texte : noms des plats, noms des repas, noms des ingrédients, modes de préparation, résumés, analyses, recommandations, consignes sportives, etc.
+Exemples obligatoires :
+- nom de repas : "فطور متوازن (Petit-déjeuner équilibré)"
+- nom de plat : "طاجين دجاج بالخضار (Tajine de poulet aux légumes)"
+- ingrédient : "صدر دجاج (Blanc de poulet)"
+- préparation : "مشوي (Grillé)" ; "مطهي بالبخار (Cuit à la vapeur)" ; "كامل (Entier)" ; "للتتبيل (Pour l'assaisonnement)"
+RÈGLES :
+- L'arabe vient TOUJOURS en premier, le français TOUJOURS entre parenthèses juste après.
+- N'inverse jamais l'ordre. Ne mets jamais le français seul ni l'arabe seul.
+- Les unités (g, kg, kcal, L) et les nombres restent inchangés, hors parenthèses (ex. "صدر دجاج (Blanc de poulet)" avec quantité "150 g").
+- Les clés JSON restent en anglais/technique, jamais traduites.
+Si tu réponds uniquement en français, ou uniquement en arabe sans la parenthèse française, c'est une ERREUR grave.
 
 `;
   }
