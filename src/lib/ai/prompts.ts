@@ -128,6 +128,66 @@ Réponds STRICTEMENT avec ce JSON :
 }`;
 }
 
+/** System prompt pour la régénération d'un seul repas. */
+export const REGENERATE_MEAL_SYSTEM_PROMPT = `Tu es un nutritionniste qui régénère UN SEUL repas d'un menu marocain sain (régime méditerranéen, référentiel EMC).
+Tu proposes une ALTERNATIVE différente du repas actuel, en respectant la structure et le rôle nutritionnel du repas.
+Réponds UNIQUEMENT avec l'objet JSON du repas, sans texte ni balises markdown.`;
+
+/**
+ * Régénère UN SEUL repas d'un jour (petit-déjeuner, déjeuner ou dîner).
+ * Renvoie le repas modifié (structure Meal). Garde le rôle du repas et vise
+ * les mêmes calories ; propose un plat DIFFÉRENT de l'actuel et des autres repas du jour.
+ */
+export function buildRegenerateMealPrompt(
+  jour: DailyMealPlan,
+  mealIndex: number,
+  locale: Locale,
+  form: PatientForm,
+): string {
+  const lang = locale === "ar" ? "arabe (arabe médical professionnel)" : "français";
+  const contraintes = buildPatientConstraints(form);
+  const repas = jour.repas[mealIndex];
+  const autresRepas = jour.repas.filter((_, i) => i !== mealIndex);
+
+  // Règles spécifiques selon le type de repas.
+  const type = repas.type.toLowerCase();
+  let regleRepas = "";
+  if (type.includes("petit")) {
+    regleRepas = "C'est un PETIT-DÉJEUNER : glucides complexes (pain complet/orge/msemen/harcha) + protéine (œuf/fromage/yaourt) + bonnes graisses. AUCUN fruit. Pas d'avoine ni de quinoa.";
+  } else if (type.includes("déjeuner") || type.includes("dejeuner")) {
+    regleRepas = "C'est le DÉJEUNER (repas principal) : crudités + protéine 120-150 g (viande/poisson/volaille/œufs) + petit féculent complet + pain complet + 1 fruit en dessert. Le déjeuner est le SEUL repas avec un fruit.";
+  } else if (type.includes("dîner") || type.includes("diner")) {
+    regleRepas = "C'est le DÎNER : toujours une protéine explicite + légumes + pain complet. Jamais de poisson au dîner. Pas de fruit.";
+  }
+
+  const couscousNote =
+    jour.jour.toLowerCase() === "vendredi" && (type.includes("déjeuner") || type.includes("dejeuner"))
+      ? "C'est le déjeuner du vendredi : le couscous est autorisé."
+      : "Pas de couscous (réservé au déjeuner du vendredi).";
+
+  return `LANGUE DE RÉPONSE : ${lang}.${contraintes}
+
+Jour « ${jour.jour} » — tu dois RÉGÉNÉRER UNIQUEMENT le repas « ${repas.type} » (~${repas.calories} kcal).
+
+REPAS ACTUEL (à remplacer par une alternative DIFFÉRENTE) :
+${JSON.stringify(repas)}
+
+AUTRES REPAS DU JOUR (NE PAS répéter leurs plats/protéines) :
+${JSON.stringify(autresRepas)}
+
+${regleRepas}
+${couscousNote}
+Vise environ ${repas.calories} kcal. Propose un plat marocain sain RÉELLEMENT DIFFÉRENT de l'actuel et des autres repas du jour.
+
+Réponds STRICTEMENT avec ce JSON (UN seul repas) :
+{
+  "type": "${repas.type}",
+  "nom": "string",
+  "calories": number,
+  "ingredients": [ { "nom": "string", "quantite": "string (ex: 120 g)", "preparation": "string (cru, grillé, vapeur…)" } ]
+}`;
+}
+
 /** System prompt pour la traduction médicale d'un programme déjà généré. */
 export const TRANSLATION_SYSTEM_PROMPT = `Tu es un traducteur médical professionnel (français ⇄ arabe).
 Tu traduis fidèlement un programme nutritionnel et sportif en conservant EXACTEMENT la même structure JSON (mêmes clés).

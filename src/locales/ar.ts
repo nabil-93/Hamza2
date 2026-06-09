@@ -192,6 +192,8 @@ export const ar: Record<TranslationKey, string> = {
   "chat.discussPlaceholder": "مثال: هل هذا الغداء مناسب؟ أو: استبدل الدجاج بالسمك",
   "chat.apply": "تطبيق",
   "chat.applied": "تم تطبيق التعديل",
+  "meal.regenerate": "إعادة توليد هذه الوجبة",
+  "meal.undo": "الرجوع إلى الوجبة السابقة",
   "preview.title": "معاينة التقرير",
   "preview.hint": "معاينة قابلة للتعديل — اضغط داخل النص للتعديل ثم صدِّر.",
 

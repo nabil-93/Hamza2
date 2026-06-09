@@ -190,6 +190,8 @@ export const fr = {
   "chat.discussPlaceholder": "Ex : ce déjeuner est-il adapté ? ou : remplace le poulet par du poisson",
   "chat.apply": "Appliquer",
   "chat.applied": "Modification appliquée",
+  "meal.regenerate": "Régénérer ce repas",
+  "meal.undo": "Revenir au repas précédent",
   "preview.title": "Aperçu du rapport",
   "preview.hint": "Aperçu éditable — cliquez dans le texte pour modifier, puis exportez.",
 

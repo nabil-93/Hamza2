@@ -169,6 +169,25 @@ export interface DiscussResult {
 }
 
 /**
+ * Régénère UN SEUL repas d'un jour (petit-déjeuner, déjeuner ou dîner).
+ * Renvoie le jour complet mis à jour (calories recalculées).
+ */
+export async function regenerateMeal(
+  jour: DailyMealPlan,
+  mealIndex: number,
+  locale: Locale,
+  form: PatientForm,
+): Promise<DailyMealPlan> {
+  const res = await postRaw<{ jour: DailyMealPlan }>("/api/chat/regenerate-meal", {
+    jour,
+    mealIndex,
+    locale,
+    form,
+  });
+  return res.jour;
+}
+
+/**
  * DISCUTE avec l'IA à propos d'un jour. L'IA répond par du texte ;
  * elle ne renvoie une proposition de jour modifié que si on le lui demande.
  */

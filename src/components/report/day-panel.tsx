@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check, RefreshCw, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/locales";
-import { discussDay, type ChatTurn } from "@/lib/ai/client";
+import { discussDay, regenerateMeal, type ChatTurn } from "@/lib/ai/client";
 import { cn } from "@/lib/utils";
-import type { DailyMealPlan, PatientForm, CalculationResult, Locale } from "@/types";
+import type { DailyMealPlan, Meal, PatientForm, CalculationResult, Locale } from "@/types";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -36,6 +36,9 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
   const [loading, setLoading] = React.useState(false);
   const [messages, setMessages] = React.useState<ChatMsg[]>([]);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  // Régénération par repas : index en cours + sauvegarde du repas précédent (pour Annuler).
+  const [regenIndex, setRegenIndex] = React.useState<number | null>(null);
+  const [prevMeals, setPrevMeals] = React.useState<Record<number, Meal>>({});
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -67,6 +70,36 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
   const apply = (msgIndex: number, proposition: DailyMealPlan) => {
     onUpdateDay(dayIndex, proposition);
     setMessages((m) => m.map((msg, i) => (i === msgIndex ? { ...msg, applied: true } : msg)));
+  };
+
+  /** Régénère UN repas : sauvegarde l'ancien (pour Annuler) puis met à jour le jour. */
+  const regenMeal = async (mealIndex: number) => {
+    if (regenIndex !== null) return;
+    setRegenIndex(mealIndex);
+    const ancien = plan.repas[mealIndex];
+    try {
+      const updated = await regenerateMeal(plan, mealIndex, locale, form);
+      setPrevMeals((p) => ({ ...p, [mealIndex]: ancien }));
+      onUpdateDay(dayIndex, updated);
+    } catch {
+      /* en cas d'erreur on ne touche à rien */
+    } finally {
+      setRegenIndex(null);
+    }
+  };
+
+  /** Annule la régénération : remet l'ancien repas et recalcule le total. */
+  const undoMeal = (mealIndex: number) => {
+    const ancien = prevMeals[mealIndex];
+    if (!ancien) return;
+    const repas = plan.repas.map((r, i) => (i === mealIndex ? ancien : r));
+    const caloriesTotales = repas.reduce((sum, r) => sum + (r.calories || 0), 0);
+    onUpdateDay(dayIndex, { ...plan, repas, caloriesTotales });
+    setPrevMeals((p) => {
+      const next = { ...p };
+      delete next[mealIndex];
+      return next;
+    });
   };
 
   const suggestions = [t("chat.sugg1"), t("chat.sugg2"), t("chat.sugg3")];
@@ -101,33 +134,59 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
         <div className="grid gap-4 border-t border-border p-4 lg:grid-cols-2">
           {/* Colonne gauche : repas du jour */}
           <div className="space-y-3">
-            {plan.repas.map((repas, i) => (
-              <div key={i} className="rounded-lg border border-border bg-white p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-semibold">
-                    <span className="text-primary">{repas.type}</span>
-                    <span className="mx-1 text-muted-foreground">—</span>
-                    {repas.nom}
-                  </p>
-                  <Badge variant="neutral">{repas.calories} kcal</Badge>
+            {plan.repas.map((repas, i) => {
+              const isRegen = regenIndex === i;
+              const canUndo = !!prevMeals[i];
+              return (
+                <div key={i} className="rounded-lg border border-border bg-white p-3">
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold">
+                      <span className="text-primary">{repas.type}</span>
+                      <span className="mx-1 text-muted-foreground">—</span>
+                      {repas.nom}
+                    </p>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Badge variant="neutral">{repas.calories} kcal</Badge>
+                      {canUndo && (
+                        <button
+                          type="button"
+                          title={t("meal.undo")}
+                          onClick={() => undoMeal(i)}
+                          disabled={regenIndex !== null}
+                          className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
+                        >
+                          <Undo2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        title={t("meal.regenerate")}
+                        onClick={() => regenMeal(i)}
+                        disabled={regenIndex !== null}
+                        className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/40 text-primary transition-colors hover:bg-primary-50 disabled:opacity-40"
+                      >
+                        {isRegen ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <ul className={cn("grid gap-1 text-xs text-muted-foreground sm:grid-cols-2", isRegen && "opacity-40")}>
+                    {repas.ingredients.map((ing, j) => (
+                      <li key={j} className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5">
+                          {ing.nom}
+                          {ing.preparation && (
+                            <span className="rounded-full bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700">
+                              {ing.preparation}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 font-medium text-foreground">{ing.quantite}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                  {repas.ingredients.map((ing, j) => (
-                    <li key={j} className="flex items-center justify-between gap-2">
-                      <span className="flex items-center gap-1.5">
-                        {ing.nom}
-                        {ing.preparation && (
-                          <span className="rounded-full bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700">
-                            {ing.preparation}
-                          </span>
-                        )}
-                      </span>
-                      <span className="shrink-0 font-medium text-foreground">{ing.quantite}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Colonne droite : chat conversationnel pour ce jour */}
