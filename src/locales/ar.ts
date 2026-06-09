@@ -198,6 +198,13 @@ export const ar: Record<TranslationKey, string> = {
   "meal.regenerate": "إعادة توليد هذه الوجبة",
   "meal.prevVersion": "النسخة السابقة",
   "meal.nextVersion": "النسخة التالية",
+  "meal.edit": "تعديل يدوي",
+  "meal.editDone": "إنهاء التعديل",
+  "meal.nameLabel": "اسم الوجبة",
+  "meal.ingredientName": "المكوّن",
+  "meal.ingredientQty": "الكمية",
+  "meal.removeIngredient": "حذف هذا المكوّن",
+  "meal.addIngredient": "إضافة مكوّن",
   "preview.title": "معاينة التقرير",
   "preview.hint": "معاينة قابلة للتعديل — اضغط داخل النص للتعديل ثم صدِّر.",
 

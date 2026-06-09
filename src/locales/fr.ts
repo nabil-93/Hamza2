@@ -196,6 +196,13 @@ export const fr = {
   "meal.regenerate": "Régénérer ce repas",
   "meal.prevVersion": "Version précédente",
   "meal.nextVersion": "Version suivante",
+  "meal.edit": "Modifier manuellement",
+  "meal.editDone": "Terminer la modification",
+  "meal.nameLabel": "Nom du repas",
+  "meal.ingredientName": "Ingrédient",
+  "meal.ingredientQty": "Quantité",
+  "meal.removeIngredient": "Supprimer cet ingrédient",
+  "meal.addIngredient": "Ajouter un ingrédient",
   "preview.title": "Aperçu du rapport",
   "preview.hint": "Aperçu éditable — cliquez dans le texte pour modifier, puis exportez.",
 

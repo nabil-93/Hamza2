@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check, RefreshCw, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check, RefreshCw, ChevronLeft, ChevronRight, Eye, Pencil, X, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/locales";
 import { discussDay, regenerateMeal, type ChatTurn } from "@/lib/ai/client";
-import { cn } from "@/lib/utils";
+import { cn, macroPercents } from "@/lib/utils";
 import type { DailyMealPlan, Meal, PatientForm, CalculationResult, Locale } from "@/types";
 
 /**
@@ -133,6 +133,38 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
     setMealAt(mealIndex, hist.versions[target]);
   };
 
+  // ── Édition manuelle d'un repas ───────────────────────────────────────────
+  // Index du repas en cours d'édition manuelle (null = aucun).
+  const [editIndex, setEditIndex] = React.useState<number | null>(null);
+
+  /** Modifie le nom ou les calories d'un repas. */
+  const editMealField = (mealIndex: number, field: "nom" | "calories", value: string) => {
+    const repas = plan.repas[mealIndex];
+    const meal: Meal = { ...repas, [field]: field === "calories" ? Number(value) || 0 : value };
+    setMealAt(mealIndex, meal);
+  };
+
+  /** Modifie le nom ou la quantité d'un ingrédient. */
+  const editIngredient = (mealIndex: number, ingIndex: number, field: "nom" | "quantite", value: string) => {
+    const repas = plan.repas[mealIndex];
+    const ingredients = repas.ingredients.map((ing, k) => (k === ingIndex ? { ...ing, [field]: value } : ing));
+    setMealAt(mealIndex, { ...repas, ingredients });
+  };
+
+  /** Supprime un ingrédient d'un repas. */
+  const removeIngredient = (mealIndex: number, ingIndex: number) => {
+    const repas = plan.repas[mealIndex];
+    const ingredients = repas.ingredients.filter((_, k) => k !== ingIndex);
+    setMealAt(mealIndex, { ...repas, ingredients });
+  };
+
+  /** Ajoute un ingrédient vide à un repas. */
+  const addIngredient = (mealIndex: number) => {
+    const repas = plan.repas[mealIndex];
+    const ingredients = [...repas.ingredients, { nom: "", quantite: "" }];
+    setMealAt(mealIndex, { ...repas, ingredients });
+  };
+
   const suggestions = [t("chat.sugg1"), t("chat.sugg2"), t("chat.sugg3")];
 
   return (
@@ -150,7 +182,7 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
           <div>
             <p className="text-sm font-semibold text-foreground">{plan.jour}</p>
             <p className="text-xs text-muted-foreground">
-              {plan.caloriesTotales} kcal · P {plan.macros.proteines}g · G {plan.macros.glucides}g · L {plan.macros.lipides}g
+              {plan.caloriesTotales} kcal · P {plan.macros.proteines}g ({macroPercents(plan.macros).proteines}%) · G {plan.macros.glucides}g ({macroPercents(plan.macros).glucides}%) · L {plan.macros.lipides}g ({macroPercents(plan.macros).lipides}%)
             </p>
           </div>
         </div>
@@ -167,21 +199,46 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
           <div className="space-y-3">
             {plan.repas.map((repas, i) => {
               const isRegen = regenIndex === i;
+              const isEditing = editIndex === i;
               const hist = mealHistory[i];
               const nVersions = hist?.versions.length ?? 0;
               const cur = hist?.current ?? 0;
               return (
-                <div key={i} className="rounded-lg border border-border bg-white p-3">
+                <div key={i} className={cn("rounded-lg border bg-white p-3", isEditing ? "border-primary ring-1 ring-primary/30" : "border-border")}>
                   <div className="mb-2 flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold">
-                      <span className="text-primary">{repas.type}</span>
-                      <span className="mx-1 text-muted-foreground">—</span>
-                      {repas.nom}
-                    </p>
+                    {isEditing ? (
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="text-[11px] font-semibold text-primary">{repas.type}</span>
+                        <input
+                          value={repas.nom}
+                          onChange={(e) => editMealField(i, "nom", e.target.value)}
+                          placeholder={t("meal.nameLabel")}
+                          className="w-full rounded-md border border-border bg-white px-2 py-1 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-sm font-semibold">
+                        <span className="text-primary">{repas.type}</span>
+                        <span className="mx-1 text-muted-foreground">—</span>
+                        {repas.nom}
+                      </p>
+                    )}
                     <div className="flex shrink-0 items-center gap-1">
-                      <Badge variant="neutral">{repas.calories} kcal</Badge>
+                      {isEditing ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={repas.calories}
+                            onChange={(e) => editMealField(i, "calories", e.target.value)}
+                            className="h-7 w-16 rounded-md border border-border bg-white px-1.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          />
+                          <span className="text-[11px] text-muted-foreground">kcal</span>
+                        </div>
+                      ) : (
+                        <Badge variant="neutral">{repas.calories} kcal</Badge>
+                      )}
                       {/* Navigation entre versions générées (‹ 2/5 ›) */}
-                      {nVersions > 1 && (
+                      {nVersions > 1 && !isEditing && (
                         <div className="flex items-center gap-0.5 rounded-md border border-border px-1">
                           <button
                             type="button"
@@ -208,16 +265,65 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
                       )}
                       <button
                         type="button"
+                        title={isEditing ? t("meal.editDone") : t("meal.edit")}
+                        onClick={() => setEditIndex(isEditing ? null : i)}
+                        disabled={regenIndex !== null}
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:opacity-40",
+                          isEditing
+                            ? "border-success bg-success text-white hover:bg-success/90"
+                            : "border-primary/40 text-primary hover:bg-primary-50",
+                        )}
+                      >
+                        {isEditing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        type="button"
                         title={t("meal.regenerate")}
                         onClick={() => regenMeal(i)}
-                        disabled={regenIndex !== null}
+                        disabled={regenIndex !== null || isEditing}
                         className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/40 text-primary transition-colors hover:bg-primary-50 disabled:opacity-40"
                       >
                         {isRegen ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                       </button>
                     </div>
                   </div>
-                  {(() => {
+                  {isEditing ? (
+                    // ── Mode édition : un ingrédient par ligne, modifiable + suppression + ajout ──
+                    <div className="space-y-1.5">
+                      {repas.ingredients.map((ing, j) => (
+                        <div key={j} className="flex items-center gap-1.5">
+                          <input
+                            value={ing.nom}
+                            onChange={(e) => editIngredient(i, j, "nom", e.target.value)}
+                            placeholder={t("meal.ingredientName")}
+                            className="min-w-0 flex-1 rounded-md border border-border bg-white px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          />
+                          <input
+                            value={ing.quantite}
+                            onChange={(e) => editIngredient(i, j, "quantite", e.target.value)}
+                            placeholder={t("meal.ingredientQty")}
+                            className="w-24 rounded-md border border-border bg-white px-2 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          />
+                          <button
+                            type="button"
+                            title={t("meal.removeIngredient")}
+                            onClick={() => removeIngredient(i, j)}
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-danger/40 text-danger transition-colors hover:bg-danger/10"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => addIngredient(i)}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-primary/40 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary-50"
+                      >
+                        <Plus className="h-3.5 w-3.5" />{t("meal.addIngredient")}
+                      </button>
+                    </div>
+                  ) : (() => {
                     // Répartit les ingrédients sur deux colonnes séparées par un trait
                     // vertical continu : la moitié à gauche, le reste à droite.
                     const mid = Math.ceil(repas.ingredients.length / 2);
