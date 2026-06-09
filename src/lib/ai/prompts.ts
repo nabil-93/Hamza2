@@ -30,6 +30,7 @@ RÈGLES MÉTIER (à respecter dans toute proposition) :
 - Régime méditerranéen, cuisine marocaine saine.
 - Macros EMC : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
 - Déjeuner et dîner : protéine explicite + pain complet listés. Petit-déjeuner sans fruit. Déjeuner = seul repas avec 1 fruit. Couscous = vendredi midi uniquement. Pas de quinoa ni d'avoine.
+- CALORIES : le déjeuner doit TOUJOURS être plus calorique que le dîner (déjeuner > dîner). Si une modification casse cette règle, rééquilibre les portions pour la rétablir.
 - Garde les calories actuelles sauf demande contraire.
 
 FORMAT DE RÉPONSE — réponds TOUJOURS avec cet objet JSON (sans texte ni markdown autour) :
@@ -161,9 +162,19 @@ export function buildRegenerateMealPrompt(
   if (type.includes("petit")) {
     regleRepas = "C'est un PETIT-DÉJEUNER : glucides complexes (pain complet/orge/msemen/harcha) + protéine (œuf/fromage/yaourt) + bonnes graisses. AUCUN fruit. Pas d'avoine ni de quinoa.";
   } else if (type.includes("déjeuner") || type.includes("dejeuner")) {
-    regleRepas = "C'est le DÉJEUNER (repas principal) : crudités + protéine 120-150 g (viande/poisson/volaille/œufs) + petit féculent complet + pain complet + 1 fruit en dessert. Le déjeuner est le SEUL repas avec un fruit.";
+    const diner = jour.repas.find((r) => {
+      const tt = r.type.toLowerCase();
+      return tt.includes("dîner") || tt.includes("diner");
+    });
+    const plancher = diner ? ` Les calories du déjeuner doivent rester SUPÉRIEURES à celles du dîner (${diner.calories} kcal) — le déjeuner est le repas le plus copieux.` : "";
+    regleRepas = `C'est le DÉJEUNER (repas principal) : crudités + protéine 120-150 g (viande/poisson/volaille/œufs) + petit féculent complet + pain complet + 1 fruit en dessert. Le déjeuner est le SEUL repas avec un fruit.${plancher}`;
   } else if (type.includes("dîner") || type.includes("diner")) {
-    regleRepas = "C'est le DÎNER : toujours une protéine explicite + légumes + pain complet. Jamais de poisson au dîner. Pas de fruit.";
+    const dej = jour.repas.find((r) => {
+      const tt = r.type.toLowerCase();
+      return (tt.includes("déjeuner") || tt.includes("dejeuner")) && !tt.includes("petit");
+    });
+    const plafond = dej ? ` Les calories du dîner doivent rester INFÉRIEURES à celles du déjeuner (${dej.calories} kcal) — le dîner est plus léger que le déjeuner.` : "";
+    regleRepas = `C'est le DÎNER : toujours une protéine explicite + légumes + pain complet. Jamais de poisson au dîner. Pas de fruit.${plafond}`;
   }
 
   const couscousNote =
@@ -253,6 +264,7 @@ Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité
 
 == RÈGLES SPÉCIFIQUES SUPPLÉMENTAIRES ==
 - DÉJEUNER = repas PRINCIPAL de la journée (le plus complet et copieux). C'est le SEUL repas qui contient un FRUIT/DESSERT (1 portion en fin de repas). Aucun fruit ailleurs (ni petit-déjeuner, ni dîner).
+- RÈGLE CALORIQUE ABSOLUE ET NON NÉGOCIABLE : les calories du DÉJEUNER doivent TOUJOURS être SUPÉRIEURES à celles du DÎNER (déjeuner > dîner), CHAQUE jour, sans exception. Le déjeuner est le repas le plus calorique de la journée, le dîner reste plus léger. Avant de répondre, vérifie pour chaque jour que calories(déjeuner) > calories(dîner) ; si ce n'est pas le cas, ajuste les portions pour que le déjeuner repasse au-dessus du dîner.
 - POISSON (l7out) : 2 repas/semaine MAXIMUM, et UNIQUEMENT au DÉJEUNER. JAMAIS de poisson au dîner ni au petit-déjeuner.
 - LENTILLES (l3dess) : 1 à 2 fois/semaine MAXIMUM, et UNIQUEMENT en ACCOMPAGNEMENT (jamais comme plat principal). Le plat principal protéique doit être une viande/volaille/poisson/œufs, pas les lentilles.
 - Les autres repas alternent des protéines variées et riches : poulet, dinde, escalope de poulet, viande maigre, œufs, thon. Programme RICHE EN PROTÉINES toute la semaine.
@@ -323,6 +335,7 @@ Les recommandations doivent être prudentes, réalistes, personnalisées et adap
 ✓ Déjeuner complet (les 6 éléments)
 ✓ Dîner complet (les 6 éléments)
 ✓ Calories de chaque repas cohérentes avec les quantités
+✓ Calories du DÉJEUNER strictement SUPÉRIEURES à celles du DÎNER (déjeuner > dîner) CHAQUE jour
 ✓ Macros cohérentes (P 11-15 %, G 50-55 %, L 35-40 %)
 Si une règle n'est pas respectée, CORRIGE automatiquement le menu avant de produire le résultat.
 
@@ -714,6 +727,7 @@ Réponds STRICTEMENT avec ce JSON (UN seul jour) :
 Pour CHAQUE ingrédient, indique son mode de préparation dans "preparation" : « cru », « cuit à la vapeur », « grillé », « bouilli », « poêlé à l'huile d'olive », « au four », « en salade (cru) », « mijoté », etc. Exemples : courgette → « cuite à la vapeur », tomate en salade → « crue », poulet → « grillé », œufs → « durs » ou « à la coque », pain → « complet ». Sois précis pour que le patient sache exactement comment préparer chaque aliment.
 
 Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
+RÈGLE CALORIQUE ABSOLUE : les calories du DÉJEUNER doivent être SUPÉRIEURES à celles du DÎNER (déjeuner > dîner). Le déjeuner est le repas le plus copieux, le dîner reste plus léger. Vérifie ce point avant de répondre et ajuste les portions si besoin.
 OBLIGATOIRE : à chaque déjeuner et dîner, liste explicitement le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec sa quantité (viande/poisson/volaille/œufs/légumineuses). Le petit-déjeuner doit aussi contenir une protéine.
 RAPPELS : le DÉJEUNER est le repas principal et se termine TOUJOURS par 1 fruit frais. L'OMELETTE/œufs brouillés se mettent au petit-déjeuner OU au dîner (jamais les deux, jamais au déjeuner). PAS de quinoa ni de flocons d'avoine.`;
 }
