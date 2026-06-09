@@ -231,14 +231,7 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
                                 key={j}
                                 className="flex items-center justify-between gap-3 border-b border-dashed border-border/60 pb-1.5 last:border-0 last:pb-0"
                               >
-                                <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                                  <span className="truncate">{ing.nom}</span>
-                                  {ing.preparation && (
-                                    <span className="shrink-0 rounded-full bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700">
-                                      {ing.preparation}
-                                    </span>
-                                  )}
-                                </span>
+                                <span className="min-w-0 truncate">{ing.nom}</span>
                                 <span className="shrink-0 whitespace-nowrap font-semibold text-foreground">{ing.quantite}</span>
                               </li>
                             ))}
@@ -311,7 +304,7 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
                                 <ul className="space-y-0.5 text-[10px] text-muted-foreground">
                                   {repas.ingredients.map((ing, p) => (
                                     <li key={p} className="flex justify-between gap-2">
-                                      <span>{ing.nom}{ing.preparation ? ` (${ing.preparation})` : ""}</span>
+                                      <span>{ing.nom}</span>
                                       <span className="shrink-0 font-medium text-foreground">{ing.quantite}</span>
                                     </li>
                                   ))}
