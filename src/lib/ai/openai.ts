@@ -53,12 +53,15 @@ export async function generateJson<T>(
 
   const client = new OpenAI({ apiKey });
   const envModel = process.env.OPENAI_MODEL;
-  const model = envModel && !envModel.startsWith("sk-") ? envModel : "gpt-4o-mini";
+  const model = envModel && !envModel.startsWith("sk-") ? envModel : "gpt-5.5";
   console.log(`[OpenAI] model utilisé: ${model} | langue: ${locale ?? "fr (défaut)"}`);
+
+  // Les modèles GPT-5.x n'acceptent que la température par défaut (1).
+  const isGpt5 = model.startsWith("gpt-5");
 
   const completion = await client.chat.completions.create({
     model,
-    temperature,
+    ...(isGpt5 ? {} : { temperature }),
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: langDirective(locale) + systemPrompt },
