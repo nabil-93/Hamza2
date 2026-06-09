@@ -28,8 +28,8 @@ const JOURS_SEMAINE = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samed
    ÉCRAN 0 — Choix langue + type programme
 ───────────────────────────────────────── */
 function ChoixInitiaux() {
-  const { programType, setProgramType } = useWizard();
-  const { t, locale, setLocale } = useI18n();
+  const { programType, setProgramType, generatedLocale, setGeneratedLocale } = useWizard();
+  const { t } = useI18n();
 
   const langs: { value: "fr" | "ar"; label: string; flag: string }[] = [
     { value: "fr", label: "Français", flag: "🇫🇷" },
@@ -53,28 +53,29 @@ function ChoixInitiaux() {
 
   return (
     <div className="mx-auto max-w-lg space-y-8 py-4">
-      {/* Langue */}
+      {/* Langue du document */}
       <div>
-        <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+        <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-foreground">
           <Globe className="h-4 w-4 text-primary" />
           {t("export.langTitle")}
         </p>
+        <p className="mb-3 text-xs text-muted-foreground">Le rapport Word/HTML sera généré dans cette langue. L&apos;interface de l&apos;application reste inchangée.</p>
         <div className="grid grid-cols-2 gap-3">
           {langs.map((l) => (
             <button
               key={l.value}
               type="button"
-              onClick={() => setLocale(l.value)}
+              onClick={() => setGeneratedLocale(l.value)}
               className={cn(
                 "flex items-center gap-3 rounded-xl border p-4 text-start font-medium transition-all",
-                locale === l.value
+                generatedLocale === l.value
                   ? "border-primary bg-primary-50 ring-2 ring-primary text-primary"
                   : "border-border bg-white hover:bg-muted text-foreground",
               )}
             >
               <span className="text-2xl">{l.flag}</span>
               <span className="text-sm">{l.label}</span>
-              {locale === l.value && <CheckCircle2 className="ml-auto h-4 w-4 text-primary" />}
+              {generatedLocale === l.value && <CheckCircle2 className="ml-auto h-4 w-4 text-primary" />}
             </button>
           ))}
         </div>
