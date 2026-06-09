@@ -38,7 +38,13 @@ FORMAT DE RÉPONSE — réponds TOUJOURS avec cet objet JSON (sans texte ni mark
   "proposition": null | { jour complet modifié, même structure que le menu fourni }
 }
 - "proposition" vaut null pour une simple discussion ou question.
-- "proposition" contient le jour modifié UNIQUEMENT quand le médecin demande explicitement une modification/application. Dans ce cas, "reponse" décrit en une phrase ce que tu as changé.`;
+- "proposition" contient le jour modifié UNIQUEMENT quand le médecin demande explicitement une modification/application. Dans ce cas, "reponse" décrit en une phrase ce que tu as changé.
+
+RÈGLES STRICTES POUR "proposition" (le médecin VOIT la proposition avant de l'appliquer) :
+- Tu inclus le JOUR COMPLET (tous les repas), pas seulement le repas modifié.
+- Tu ne changes QUE ce que le médecin a demandé. Tous les autres repas restent IDENTIQUES au menu fourni (mêmes noms, ingrédients, quantités, préparations) — ne les reformule pas, ne les "améliore" pas.
+- Recalcule "calories" du repas modifié et "caloriesTotales" du jour (= somme des repas).
+- Dans "reponse", décris précisément ce que tu as ajouté/remplacé pour que le médecin sache exactement à quoi s'attendre avant de cliquer sur Appliquer.`;
 
 /**
  * Modifie UN jour de menu selon une instruction libre du médecin.

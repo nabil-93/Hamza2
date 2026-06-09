@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, Send, Loader2, Bot, User, Wand2, ChevronDown, ChevronUp, Check, RefreshCw, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,20 @@ import { useI18n } from "@/locales";
 import { discussDay, regenerateMeal, type ChatTurn } from "@/lib/ai/client";
 import { cn } from "@/lib/utils";
 import type { DailyMealPlan, Meal, PatientForm, CalculationResult, Locale } from "@/types";
+
+/**
+ * Renvoie les repas de la proposition qui DIFFÈRENT du menu actuel (par type).
+ * Permet d'afficher un aperçu ciblé : seuls les repas réellement modifiés.
+ * Si aucun repas commun ne diffère, on affiche toute la proposition (sécurité).
+ */
+function changedMeals(before: DailyMealPlan, after: DailyMealPlan): Meal[] {
+  const sameMeal = (a: Meal, b: Meal) => JSON.stringify(a) === JSON.stringify(b);
+  const changed = after.repas.filter((repasApres) => {
+    const avant = before.repas.find((r) => r.type === repasApres.type);
+    return !avant || !sameMeal(avant, repasApres);
+  });
+  return changed.length > 0 ? changed : after.repas;
+}
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -262,22 +276,54 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
                         {m.text}
                       </span>
                     </div>
-                    {/* Bouton Appliquer si l'IA a joint une proposition */}
+                    {/* Aperçu de la proposition + bouton Appliquer */}
                     {m.role === "assistant" && m.proposition && (
-                      <div className="ms-6 mt-1">
-                        {m.applied ? (
-                          <Badge variant="success" className="flex items-center gap-1 text-[11px]">
-                            <Check className="h-3 w-3" />{t("chat.applied")}
-                          </Badge>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => apply(i, m.proposition!)}
-                            className="h-7 gap-1 text-[11px]"
-                          >
-                            <Check className="h-3.5 w-3.5" />{t("chat.apply")} ({m.proposition.caloriesTotales} kcal)
-                          </Button>
-                        )}
+                      <div className="ms-6 mt-1 w-full max-w-[280px]">
+                        {/* Aperçu des repas modifiés (avant d'appliquer) */}
+                        <div className="rounded-lg border border-primary/30 bg-primary-50/40 p-2.5">
+                          <p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold text-primary-700">
+                            <Eye className="h-3 w-3" />{t("chat.previewTitle")}
+                          </p>
+                          <div className="space-y-2">
+                            {changedMeals(plan, m.proposition).map((repas, k) => (
+                              <div key={k} className="rounded-md border border-border bg-white p-2">
+                                <div className="mb-1 flex items-center justify-between gap-2">
+                                  <span className="text-[11px] font-semibold">
+                                    <span className="text-primary">{repas.type}</span> — {repas.nom}
+                                  </span>
+                                  <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{repas.calories} kcal</span>
+                                </div>
+                                <ul className="space-y-0.5 text-[10px] text-muted-foreground">
+                                  {repas.ingredients.map((ing, p) => (
+                                    <li key={p} className="flex justify-between gap-2">
+                                      <span>{ing.nom}{ing.preparation ? ` (${ing.preparation})` : ""}</span>
+                                      <span className="shrink-0 font-medium text-foreground">{ing.quantite}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="mt-1.5 text-[10px] text-muted-foreground">
+                            {t("chat.newTotal")} : <span className="font-semibold text-foreground">{m.proposition.caloriesTotales} kcal</span>
+                          </p>
+                        </div>
+                        {/* Action */}
+                        <div className="mt-1.5 flex items-center gap-2">
+                          {m.applied ? (
+                            <Badge variant="success" className="flex items-center gap-1 text-[11px]">
+                              <Check className="h-3 w-3" />{t("chat.applied")}
+                            </Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => apply(i, m.proposition!)}
+                              className="h-7 gap-1 text-[11px]"
+                            >
+                              <Check className="h-3.5 w-3.5" />{t("chat.confirmApply")}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
