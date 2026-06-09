@@ -31,6 +31,9 @@ export async function POST(req: NextRequest) {
     const days = duration === 7 ? 7 : 1;
     const nutrition = await generateJson<NutritionProgram>(
       buildNutritionPrompt(form, calc, locale, days),
+      undefined,
+      0.6,
+      locale,
     );
 
     const deviations = describeDeviations(nutrition);

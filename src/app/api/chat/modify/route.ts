@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
         buildModifyDayPrompt(target.data, instruction, locale, form),
         CHAT_SYSTEM_PROMPT,
         0.6,
+        locale,
       );
       return NextResponse.json({ kind: "day", index: target.index, data: updated });
     }

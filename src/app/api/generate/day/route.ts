@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       buildSingleDayPrompt(form, calc, locale, jourNom, autresJours ?? [], historyJours ?? []),
       undefined,
       0.85,
+      locale,
     );
     return NextResponse.json({ plan });
   } catch (err) {

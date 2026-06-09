@@ -16,7 +16,7 @@ interface Body {
 export async function POST(req: NextRequest) {
   try {
     const { form, calc, locale } = (await req.json()) as Body;
-    const sport = await generateJson<SportResult["sport"]>(buildSportPrompt(form, calc, locale));
+    const sport = await generateJson<SportResult["sport"]>(buildSportPrompt(form, calc, locale), undefined, 0.6, locale);
     return NextResponse.json({ sport } satisfies SportResult);
   } catch (err) {
     const message = err instanceof Error ? err.message : "UNKNOWN";

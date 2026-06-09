@@ -16,7 +16,7 @@ interface Body {
 export async function POST(req: NextRequest) {
   try {
     const { form, calc, locale } = (await req.json()) as Body;
-    const analyse = await generateJson<MedicalAnalysis>(buildAnalysisPrompt(form, calc, locale));
+    const analyse = await generateJson<MedicalAnalysis>(buildAnalysisPrompt(form, calc, locale), undefined, 0.6, locale);
     return NextResponse.json({ analyse });
   } catch (err) {
     const message = err instanceof Error ? err.message : "UNKNOWN";

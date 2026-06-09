@@ -20,7 +20,7 @@ interface ExtrasResult {
 export async function POST(req: NextRequest) {
   try {
     const { plans, locale } = (await req.json()) as Body;
-    const data = await generateJson<ExtrasResult>(buildExtrasPrompt(plans, locale));
+    const data = await generateJson<ExtrasResult>(buildExtrasPrompt(plans, locale), undefined, 0.6, locale);
     return NextResponse.json(data);
   } catch (err) {
     const message = err instanceof Error ? err.message : "UNKNOWN";

@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       buildDiscussDayPrompt(jour, message, locale, form, calc, history ?? []),
       DISCUSS_SYSTEM_PROMPT,
       0.6,
+      locale,
     );
     return NextResponse.json({
       reponse: result.reponse ?? "",
