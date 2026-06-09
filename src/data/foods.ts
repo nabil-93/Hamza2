@@ -84,8 +84,6 @@ export const FOOD_DATABASE: FoodCategory[] = [
       { fr: "Pâtes classiques", ar: "معكرونة عادية" },
       { fr: "Pain complet", ar: "خبز كامل" },
       { fr: "Pain d'orge", ar: "خبز الشعير" },
-      { fr: "Flocons d'avoine", ar: "شوفان" },
-      { fr: "Quinoa", ar: "كينوا" },
       { fr: "Patate douce", ar: "بطاطا حلوة" },
       { fr: "Pomme de terre", ar: "بطاطس" },
     ],

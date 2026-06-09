@@ -12,28 +12,30 @@ export type SectionKey =
   | "recommandations"
   | "signature";
 
-/** Ordre canonique des sections dans le rapport. */
+/**
+ * Ordre canonique des sections dans le rapport.
+ * « recettes » et « courses » sont volontairement exclus : ils ne figurent ni
+ * dans les cases à cocher ni dans le document exporté.
+ */
 export const SECTION_ORDER: SectionKey[] = [
   "patient",
   "corporelle",
   "medicale",
   "alimentaire",
-  "recettes",
-  "courses",
   "sportif",
   "recommandations",
   "signature",
 ];
 
-/** Toutes les sections cochées par défaut. */
+/** Sections cochées par défaut. Recettes/courses désactivées (non exportées). */
 export function defaultSections(): Record<SectionKey, boolean> {
   return {
     patient: true,
     corporelle: true,
     medicale: true,
     alimentaire: true,
-    recettes: true,
-    courses: true,
+    recettes: false,
+    courses: false,
     sportif: true,
     recommandations: true,
     signature: true,
