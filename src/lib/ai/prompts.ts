@@ -25,9 +25,11 @@ export function buildModifyDayPrompt(
   jour: DailyMealPlan,
   instruction: string,
   locale: Locale,
+  form?: PatientForm,
 ): string {
   const lang = locale === "ar" ? "arabe (arabe médical professionnel)" : "français";
-  return `LANGUE : ${lang}.
+  const contraintes = form ? buildPatientConstraints(form) : "";
+  return `LANGUE : ${lang}.${contraintes}
 
 Voici le menu actuel du jour « ${jour.jour} » :
 ${JSON.stringify(jour)}
@@ -182,6 +184,63 @@ Si une règle n'est pas respectée, CORRIGE automatiquement le menu avant de pro
 
 IMPORTANT : Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sans balises markdown. Respecte exactement le schéma demandé.`;
 
+/**
+ * Bloc de contraintes patient dérivées du formulaire.
+ * Injecté dans chaque prompt de génération pour que l'IA ne les ignore jamais.
+ */
+function buildPatientConstraints(form: PatientForm): string {
+  const lines: string[] = [];
+
+  // Objectif calorique
+  if (form.objectif === "perte_poids") {
+    lines.push("- OBJECTIF PERTE DE POIDS : régime hypocalorique modéré. Portions contrôlées, jamais de plats riches ou copieux.");
+  } else if (form.objectif === "prise_poids") {
+    lines.push("- OBJECTIF PRISE DE POIDS : augmenter les portions de féculents et protéines. Repas complets et denses.");
+  }
+
+  // Pathologies
+  if (form.pathologies.includes("diabete_type_1") || form.pathologies.includes("diabete_type_2") || form.pathologies.includes("prediabete")) {
+    lines.push("- DIABÈTE : index glycémique bas obligatoire. INTERDIT : sucres simples, pain blanc, riz blanc, pomme de terre seule, jus de fruits, desserts sucrés, miel. Féculents complets uniquement, petites portions, fractionner les glucides sur les repas.");
+  }
+  if (form.pathologies.includes("hypertension")) {
+    lines.push("- HYPERTENSION : sel limité au maximum. INTERDIT : plats salés, charcuteries, fromages très salés, conserves salées. Pas de resalage.");
+  }
+  if (form.pathologies.includes("dyslipidemie")) {
+    lines.push("- DYSLIPIDÉMIE : limiter graisses saturées et cholestérol. INTERDIT : viande rouge grasse, beurre, crème, friture, œufs en excès (max 3/sem). Privilégier poisson gras, huile d'olive, noix.");
+  }
+  if (form.pathologies.includes("maladie_cardiovasculaire")) {
+    lines.push("- MALADIE CARDIOVASCULAIRE : régime méditerranéen strict. INTERDIT : graisses saturées, sel en excès, sucres simples, alcool, fritures.");
+  }
+  if (form.pathologies.includes("hypothyroidie")) {
+    lines.push("- HYPOTHYROÏDIE : limiter les crucifères crus (chou, brocoli, chou-fleur) — les cuire obligatoirement. Privilégier iode (poisson, fruits de mer).");
+  }
+  if (form.pathologies.includes("syndrome_metabolique")) {
+    lines.push("- SYNDROME MÉTABOLIQUE : réduire glucides raffinés et graisses saturées. Favoriser fibres, légumes, légumineuses et poisson. INTERDIT : sucres simples, pain blanc, fritures.");
+  }
+
+  // Commentaire pathologies libre
+  if (form.commentairePathologies?.trim()) {
+    lines.push(`- CONTRAINTE MÉDICALE SPÉCIFIQUE (à respecter impérativement) : ${form.commentairePathologies.trim()}`);
+  }
+
+  // Aliments interdits
+  const interdits = form.preferences.alimentsInterdits?.trim();
+  if (interdits) {
+    lines.push(`- ⚠️ ALIMENTS STRICTEMENT INTERDITS (allergie / intolérance / refus du patient) — NE JAMAIS UTILISER DANS AUCUN REPAS NI AUCUN INGRÉDIENT : ${interdits}`);
+    lines.push("  → Avant de répondre, vérifie chaque ingrédient de chaque repas. Si l'un de ces aliments apparaît, remplace-le immédiatement par un équivalent compatible.");
+  }
+
+  // Préférences
+  const prefs = form.preferences.commentaire?.trim();
+  if (prefs) {
+    lines.push(`- PRÉFÉRENCES ALIMENTAIRES (à intégrer en priorité dans les menus) : ${prefs}`);
+  }
+
+  if (lines.length === 0) return "";
+
+  return `\n⚠️ CONTRAINTES PATIENT OBLIGATOIRES — À VÉRIFIER POUR CHAQUE REPAS ET CHAQUE INGRÉDIENT :\n${lines.join("\n")}`;
+}
+
 function listProfile(form: PatientForm, calc: CalculationResult, locale: Locale): string {
   const pref = form.preferences;
   const lang = locale === "ar" ? "arabe (langue arabe médicale professionnelle)" : "français";
@@ -261,7 +320,7 @@ export function buildNutritionPrompt(
       ? `\n- COUSCOUS : uniquement au DÉJEUNER DU VENDREDI (tradition marocaine). Jamais un autre jour, jamais à un autre repas.`
       : ``;
 
-  return `${listProfile(form, calc, locale)}
+  return `${listProfile(form, calc, locale)}${buildPatientConstraints(form)}
 
 TÂCHE : Génère ${dureeTexte} (~${calc.caloriesObjectif} kcal par jour), des recettes détaillées et UNE liste de courses regroupée par catégorie couvrant TOUTE la durée (${duration} jour(s)).${couscousRule}
 
@@ -441,7 +500,7 @@ BANQUE DE RÉFÉRENCE (inspire-toi librement, NE recopie JAMAIS à l'identique, 
 • Féculents autorisés (petites portions) : ${FECULENTS_AUTORISES.join(", ")}.
 IMPORTANT : pioche et combine différemment à chaque jour et à chaque patient pour que deux programmes ne soient jamais identiques.`;
 
-  return `${listProfile(form, calc, locale)}
+  return `${listProfile(form, calc, locale)}${buildPatientConstraints(form)}
 
 TÂCHE : Génère le menu du jour « ${jourNom} » uniquement (~${calc.caloriesObjectif} kcal), conforme au régime méditerranéen et au référentiel EMC.${couscousNote}${eviter}${roleGuidance}${banque}
 

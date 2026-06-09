@@ -117,10 +117,11 @@ export async function modifyDay(
   day: DailyMealPlan,
   instruction: string,
   locale: Locale,
+  form?: PatientForm,
 ): Promise<DailyMealPlan> {
   const res = await postRaw<{ kind: string; index: number; data: DailyMealPlan }>(
     "/api/chat/modify",
-    { target: { kind: "day", index, data: day }, instruction, locale },
+    { target: { kind: "day", index, data: day }, instruction, locale, form },
   );
   return res.data;
 }

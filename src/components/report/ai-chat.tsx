@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/locales";
 import { modifyDay } from "@/lib/ai/client";
 import { cn } from "@/lib/utils";
-import type { GeneratedProgram, DailyMealPlan, Locale } from "@/types";
+import type { GeneratedProgram, DailyMealPlan, Locale, PatientForm } from "@/types";
 
 interface Props {
   program: GeneratedProgram;
   locale: Locale;
+  form: PatientForm;
   /** Appelé quand l'IA renvoie un jour modifié. */
   onUpdateDay: (index: number, day: DailyMealPlan) => void;
 }
@@ -21,7 +22,7 @@ interface ChatMsg {
   text: string;
 }
 
-export function AIChat({ program, locale, onUpdateDay }: Props) {
+export function AIChat({ program, locale, form, onUpdateDay }: Props) {
   const { t } = useI18n();
   const plans = program.nutrition.plans;
   // "all" = tous les jours, sinon index du jour.
@@ -50,7 +51,7 @@ export function AIChat({ program, locale, onUpdateDay }: Props) {
     try {
       // Modifications en parallèle (chaque jour = requête courte).
       const results = await Promise.all(
-        indices.map((i) => modifyDay(i, plans[i], instruction, locale)),
+        indices.map((i) => modifyDay(i, plans[i], instruction, locale, form)),
       );
       results.forEach((updated, k) => onUpdateDay(indices[k], updated));
 

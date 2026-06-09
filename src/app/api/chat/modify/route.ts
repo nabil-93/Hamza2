@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai/openai";
 import { CHAT_SYSTEM_PROMPT, buildModifyDayPrompt } from "@/lib/ai/prompts";
-import type { Locale, DailyMealPlan } from "@/types";
+import type { Locale, DailyMealPlan, PatientForm } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -13,6 +13,7 @@ interface Body {
   target: Target;
   instruction: string;
   locale: Locale;
+  form?: PatientForm;
 }
 
 /**
@@ -21,11 +22,11 @@ interface Body {
  */
 export async function POST(req: NextRequest) {
   try {
-    const { target, instruction, locale } = (await req.json()) as Body;
+    const { target, instruction, locale, form } = (await req.json()) as Body;
 
     if (target.kind === "day") {
       const updated = await generateJson<DailyMealPlan>(
-        buildModifyDayPrompt(target.data, instruction, locale),
+        buildModifyDayPrompt(target.data, instruction, locale, form),
         CHAT_SYSTEM_PROMPT,
         0.6,
       );

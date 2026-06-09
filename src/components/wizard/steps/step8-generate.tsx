@@ -318,6 +318,7 @@ export function Step8Generate() {
               <AIChat
                 program={exportProgram}
                 locale={generatedLocale}
+                form={form.getValues() as PatientForm}
                 onUpdateDay={handleUpdateDay}
               />
             </div>
