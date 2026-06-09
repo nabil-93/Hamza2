@@ -58,9 +58,9 @@ interface WizardContextValue {
   /** Analyse médicale générée (partagée entre modes). */
   weeklyAnalyse: MedicalAnalysis | null;
   setWeeklyAnalyse: (a: MedicalAnalysis | null) => void;
-  /** Index du jour actif dans weeklyPlans (mode semaine). */
-  activeDay: number;
-  setActiveDay: (i: number) => void;
+  /** Index des jours développés (ouverts) dans weeklyPlans — plusieurs possibles. */
+  openDays: number[];
+  setOpenDays: React.Dispatch<React.SetStateAction<number[]>>;
 }
 
 const WizardContext = createContext<WizardContextValue | null>(null);
@@ -109,7 +109,7 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   const [programType, setProgramType] = useState<ProgramType>("day");
   const [weeklyPlans, setWeeklyPlans] = useState<WeekDay[]>([]);
   const [weeklyAnalyse, setWeeklyAnalyse] = useState<MedicalAnalysis | null>(null);
-  const [activeDay, setActiveDay] = useState<number>(0);
+  const [openDays, setOpenDays] = useState<number[]>([]);
 
   // Programme complet assemblé (disponible quand les deux sont générés).
   const program: GeneratedProgram | null =
@@ -160,11 +160,11 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
       setWeeklyPlans,
       weeklyAnalyse,
       setWeeklyAnalyse,
-      activeDay,
-      setActiveDay,
+      openDays,
+      setOpenDays,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [form, step, calc, nutritionResult, sportResult, program, isGeneratingNutrition, isGeneratingSport, generatedLocale, mealDuration, reportSections, programType, weeklyPlans, weeklyAnalyse, activeDay],
+    [form, step, calc, nutritionResult, sportResult, program, isGeneratingNutrition, isGeneratingSport, generatedLocale, mealDuration, reportSections, programType, weeklyPlans, weeklyAnalyse, openDays],
   );
 
   return <WizardContext.Provider value={value}>{children}</WizardContext.Provider>;

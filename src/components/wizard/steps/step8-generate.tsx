@@ -348,7 +348,7 @@ function ModeSemaine() {
     form, calc,
     weeklyPlans, setWeeklyPlans,
     weeklyAnalyse, setWeeklyAnalyse,
-    activeDay, setActiveDay,
+    openDays, setOpenDays,
     sportResult, setSportResult,
     generatedLocale,
     isGeneratingNutrition, setIsGeneratingNutrition,
@@ -383,7 +383,8 @@ function ModeSemaine() {
       ]);
       if (!weeklyAnalyse) setWeeklyAnalyse(analyse);
       setWeeklyPlans((prev) => [...prev, { jourNom: nextJourNom, plan }]);
-      setActiveDay(nextJourIndex);
+      // Le jour fraîchement généré s'ouvre, sans fermer les autres.
+      setOpenDays((prev) => (prev.includes(nextJourIndex) ? prev : [...prev, nextJourIndex]));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       setError(msg.includes("MISSING_OPENAI_KEY") ? t("error.noKey") : `${t("error.generation")} [${msg}]`);
@@ -493,8 +494,12 @@ function ModeSemaine() {
                   locale={generatedLocale}
                   dayIndex={i}
                   onUpdateDay={handleUpdateDay}
-                  isActive={activeDay === i}
-                  onActivate={() => setActiveDay(activeDay === i ? -1 : i)}
+                  isActive={openDays.includes(i)}
+                  onActivate={() =>
+                    setOpenDays((prev) =>
+                      prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i],
+                    )
+                  }
                 />
               )
             ))}
