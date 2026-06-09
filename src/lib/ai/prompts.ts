@@ -31,6 +31,7 @@ RÈGLES MÉTIER (à respecter dans toute proposition) :
 - Macros EMC : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
 - Déjeuner et dîner : protéine explicite + pain complet listés. Petit-déjeuner sans fruit. Déjeuner = seul repas avec 1 fruit. Couscous = vendredi midi uniquement. Pas de quinoa ni d'avoine.
 - CALORIES : le déjeuner doit TOUJOURS être plus calorique que le dîner (déjeuner > dîner). Si une modification casse cette règle, rééquilibre les portions pour la rétablir.
+- ŒUF : uniquement au petit-déjeuner. JAMAIS d'œuf au déjeuner ni au dîner. Si tu dois mettre une protéine au dîner, choisis volaille/viande/fromage (jamais œuf, jamais poisson).
 - Garde les calories actuelles sauf demande contraire.
 
 FORMAT DE RÉPONSE — réponds TOUJOURS avec cet objet JSON (sans texte ni markdown autour) :
@@ -174,7 +175,7 @@ export function buildRegenerateMealPrompt(
       return (tt.includes("déjeuner") || tt.includes("dejeuner")) && !tt.includes("petit");
     });
     const plafond = dej ? ` Les calories du dîner doivent rester INFÉRIEURES à celles du déjeuner (${dej.calories} kcal) — le dîner est plus léger que le déjeuner.` : "";
-    regleRepas = `C'est le DÎNER : toujours une protéine explicite + légumes + pain complet. Jamais de poisson au dîner. Pas de fruit.${plafond}`;
+    regleRepas = `C'est le DÎNER : toujours une protéine explicite (volaille/viande/fromage) + légumes + pain complet. JAMAIS d'œuf au dîner (l'œuf est réservé au petit-déjeuner). JAMAIS de poisson au dîner. Pas de fruit.${plafond}`;
   }
 
   const couscousNote =
@@ -252,10 +253,10 @@ INTERDIT au petit-déjeuner : AUCUN fruit ni dessert. Les fruits/desserts sont r
 Objectif : repas rassasiant et équilibré, sans fruit.
 
 == STRUCTURE OBLIGATOIRE DU DÉJEUNER ET DU DÎNER (Tableau 8) ==
-RÈGLE ABSOLUE : le DÉJEUNER et le DÎNER de CHAQUE jour DOIVENT CHACUN contenir une source de protéine animale ou végétale clairement identifiée et chiffrée. Jamais un déjeuner ni un dîner sans protéine, même quand c'est une soupe ou une salade : dans ce cas, AJOUTE une protéine (poulet, viande hachée, œuf, thon, fromage en quantité protéique, pois chiches).
+RÈGLE ABSOLUE : le DÉJEUNER et le DÎNER de CHAQUE jour DOIVENT CHACUN contenir une source de protéine animale ou végétale clairement identifiée et chiffrée. Jamais un déjeuner ni un dîner sans protéine, même quand c'est une soupe ou une salade : dans ce cas, AJOUTE une protéine (poulet, viande hachée, thon, fromage en quantité protéique, pois chiches). ⚠️ L'ŒUF EST INTERDIT AU DÎNER (et au déjeuner) : l'œuf/l'omelette ne se met QU'AU PETIT-DÉJEUNER. N'utilise jamais d'œuf comme protéine du dîner ni du déjeuner.
 Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justification médicale) :
 1. Crudités.
-2. Source protéique OBLIGATOIRE et clairement listée dans les ingrédients avec sa quantité : viande maigre 100-120 g OU poisson 150-200 g OU volaille 120 g OU œufs (2) OU thon OU légumineuses 150 g. AUCUN repas principal (déjeuner, dîner) sans protéine explicite. Une soupe au dîner DOIT être accompagnée d'une protéine (ex. soupe de légumes + 2 œufs durs, ou + blanc de poulet, ou + fromage).
+2. Source protéique OBLIGATOIRE et clairement listée dans les ingrédients avec sa quantité : viande maigre 100-120 g OU poisson 150-200 g OU volaille 120 g OU thon OU légumineuses 150 g. PAS d'œuf au déjeuner ni au dîner (l'œuf est réservé au petit-déjeuner). AUCUN repas principal (déjeuner, dîner) sans protéine explicite. Une soupe au dîner DOIT être accompagnée d'une protéine (ex. soupe de légumes + blanc de poulet, ou + dinde, ou + fromage).
 3. Légumes à volonté.
 4. Féculent complet (riz/pâtes/semoule/pomme de terre/légumes secs).
 5. Pain complet : OBLIGATOIRE à chaque déjeuner ET dîner, listé dans les ingrédients (ex. « Pain complet : 50 g »). Ne l'oublie jamais.
@@ -268,7 +269,7 @@ Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité
 - POISSON (l7out) : 2 repas/semaine MAXIMUM, et UNIQUEMENT au DÉJEUNER. JAMAIS de poisson au dîner ni au petit-déjeuner.
 - LENTILLES (l3dess) : 1 à 2 fois/semaine MAXIMUM, et UNIQUEMENT en ACCOMPAGNEMENT (jamais comme plat principal). Le plat principal protéique doit être une viande/volaille/poisson/œufs, pas les lentilles.
 - Les autres repas alternent des protéines variées et riches : poulet, dinde, escalope de poulet, viande maigre, œufs, thon. Programme RICHE EN PROTÉINES toute la semaine.
-- OMELETTE / ŒUFS BROUILLÉS : UNIQUEMENT au petit-déjeuner OU au dîner, JAMAIS aux deux le même jour, JAMAIS au déjeuner.
+- ŒUFS / OMELETTE / ŒUFS BROUILLÉS / ŒUFS DURS : UNIQUEMENT au PETIT-DÉJEUNER. RÈGLE STRICTE ET NON NÉGOCIABLE : JAMAIS d'œuf au déjeuner, JAMAIS d'œuf au dîner, sous aucune forme. L'œuf n'apparaît que dans le petit-déjeuner.
 - Ne JAMAIS utiliser de quinoa ni de flocons d'avoine.
 
 RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient une protéine (œufs, yaourt, fromage, lait) et une source de glucides complexes (pain complet, pain d'orge, msemen complet, harcha complète), SANS fruit. N'utilise JAMAIS de flocons d'avoine ni de quinoa.
@@ -336,6 +337,7 @@ Les recommandations doivent être prudentes, réalistes, personnalisées et adap
 ✓ Dîner complet (les 6 éléments)
 ✓ Calories de chaque repas cohérentes avec les quantités
 ✓ Calories du DÉJEUNER strictement SUPÉRIEURES à celles du DÎNER (déjeuner > dîner) CHAQUE jour
+✓ AUCUN œuf au déjeuner ni au dîner (œuf = petit-déjeuner uniquement) ; aucun poisson au dîner
 ✓ Macros cohérentes (P 11-15 %, G 50-55 %, L 35-40 %)
 Si une règle n'est pas respectée, CORRIGE automatiquement le menu avant de produire le résultat.
 
@@ -484,7 +486,8 @@ TÂCHE : Génère ${dureeTexte} (~${calc.caloriesObjectif} kcal par jour), des r
 CONTRAINTES ISSUES DU RÉFÉRENTIEL EMC (à respecter impérativement) :
 - BASE OBLIGATOIRE : régime MÉDITERRANÉEN (huile d'olive, légumes, légumineuses, céréales complètes, poisson plusieurs fois/semaine, peu de viande rouge), exprimé en cuisine marocaine saine.
 - Répartition des macros CHAQUE jour : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 % de ${calc.caloriesObjectif} kcal. Calcule les grammes en conséquence.
-- Déjeuner et dîner doivent suivre la structure du repas « vertueux » : crudités/potage + viande(100-120g) ou poisson(150-200g) ou œuf + légumes verts à volonté + 1 portion de féculents + 1 tranche de pain + 1 produit laitier (yaourt/fromage).
+- Déjeuner et dîner doivent suivre la structure du repas « vertueux » : crudités/potage + viande(100-120g) ou poisson(150-200g, déjeuner uniquement) ou volaille + légumes verts à volonté + 1 portion de féculents + 1 tranche de pain + 1 produit laitier (yaourt/fromage).
+- ⚠️ ŒUF : UNIQUEMENT au PETIT-DÉJEUNER. JAMAIS d'œuf au déjeuner ni au dîner, sous aucune forme (ni dur, ni omelette, ni au plat). La protéine du dîner est de la volaille, viande ou fromage (jamais œuf, jamais poisson).
 - OBLIGATOIRE pour CHAQUE déjeuner et dîner : lister explicitement dans les ingrédients le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec quantité. Ne les oublie jamais.
 - Au moins 5 portions de fruits/légumes sur la journée, féculents complets, 3 produits laitiers, poisson présent dans la semaine.
 - Huile d'olive/colza pour les matières grasses, sel limité, eau à volonté, sucres simples limités.${form.objectif === "perte_poids" ? "\n- Profil en perte de poids : régime hypocalorique MODÉRÉ (~700 kcal/repas femme, ~830 kcal/repas homme), jamais agressif." : ""}${duration > 1 ? `\n- VARIÉTÉ OBLIGATOIRE : ne répète pas les mêmes plats d'un jour à l'autre ; alterne poisson, légumineuses, volaille, œufs et varie les légumes et féculents sur les ${duration} jours.` : ""}
@@ -575,16 +578,16 @@ export function dayRole(jourNom: string): {
     "bol de belboula d'orge + fromage frais + amandes",
   ]);
 
-  // Dîner : tiré aléatoirement, TOUJOURS avec protéine.
+  // Dîner : tiré aléatoirement, TOUJOURS avec protéine (jamais d'œuf ni de poisson au dîner).
   const dinner = pick([
-    "soupe de légumes + 2 œufs durs + produit laitier",
+    "soupe de légumes + 150 g de poulet émincé + produit laitier",
     "soupe de légumes + 150 g de poulet émincé",
     "légumes au four + 150 g de poulet",
     "légumes sautés + 150 g de dinde",
-    "omelette aux légumes (2 œufs) + salade",
+    "tajine de légumes + 150 g de dinde",
     "chorba légère + 150 g de poulet",
-    "velouté de légumes + 2 œufs + fromage",
-    "légumes vapeur + 150 g de fruits de mer",
+    "velouté de légumes + 120 g de poulet + fromage",
+    "légumes vapeur + 150 g de blanc de dinde",
   ]);
 
   // Féculent : tiré aléatoirement.
@@ -729,7 +732,7 @@ Pour CHAQUE ingrédient, indique son mode de préparation dans "preparation" : �
 Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
 RÈGLE CALORIQUE ABSOLUE : les calories du DÉJEUNER doivent être SUPÉRIEURES à celles du DÎNER (déjeuner > dîner). Le déjeuner est le repas le plus copieux, le dîner reste plus léger. Vérifie ce point avant de répondre et ajuste les portions si besoin.
 OBLIGATOIRE : à chaque déjeuner et dîner, liste explicitement le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec sa quantité (viande/poisson/volaille/œufs/légumineuses). Le petit-déjeuner doit aussi contenir une protéine.
-RAPPELS : le DÉJEUNER est le repas principal et se termine TOUJOURS par 1 fruit frais. L'OMELETTE/œufs brouillés se mettent au petit-déjeuner OU au dîner (jamais les deux, jamais au déjeuner). PAS de quinoa ni de flocons d'avoine.`;
+RAPPELS : le DÉJEUNER est le repas principal et se termine TOUJOURS par 1 fruit frais. ⚠️ L'ŒUF (œuf dur, au plat, omelette, œufs brouillés) ne se met QU'AU PETIT-DÉJEUNER — JAMAIS au déjeuner, JAMAIS au dîner. La protéine du dîner doit être de la volaille, viande ou fromage (pas d'œuf, pas de poisson). PAS de quinoa ni de flocons d'avoine.`;
 }
 
 /**

@@ -28,15 +28,19 @@ export const DEJEUNER_PROTEINE_PAR_JOUR: Record<string, string> = {
   Dimanche: "150 g de poisson (cabillaud, sole, lotte) ou plat familial élaboré",
 };
 
-/** DÎNER — banque d'options (à piocher en VARIANT, protéine toujours présente). */
+/**
+ * DÎNER — banque d'options (à piocher en VARIANT, protéine toujours présente).
+ * JAMAIS d'œuf ni de poisson au dîner (œuf = petit-déjeuner uniquement,
+ * poisson = déjeuner uniquement).
+ */
 export const DINER_OPTIONS = [
   "Soupe de légumes + 150 g de viande hachée sans graisse",
   "Soupe de légumes + 150 g de poulet",
-  "Soupe de légumes + 2 œufs durs",
-  "Soupe de poisson + légumes sautés",
-  "Omelette aux légumes (2 œufs)",
+  "Chorba légère + 150 g de poulet",
+  "Velouté de légumes + 120 g de dinde + fromage",
+  "Tajine de légumes + 150 g de poulet",
   "Légumes au four + 150 g de poulet",
-  "Légumes au four + 150 g de fruits de mer",
+  "Légumes vapeur + 150 g de blanc de dinde",
   "Légumes sautés + 150 g de poulet",
   "Légumes au four + 150 g de dinde",
 ];
