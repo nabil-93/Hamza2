@@ -12,6 +12,8 @@ import type {
   ShoppingCategory,
 } from "@/types";
 
+export type { MedicalAnalysis };
+
 const JOURS_SEMAINE = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 async function postRaw<T>(url: string, body: unknown): Promise<T> {
@@ -109,6 +111,34 @@ export async function generateSport(payload: GeneratePayload): Promise<SportResu
 /** Assemble NutritionResult + SportResult en GeneratedProgram pour l'export. */
 export function assembleProgram(n: NutritionResult, s: SportResult): GeneratedProgram {
   return { analyse: n.analyse, nutrition: n.nutrition, sport: s.sport };
+}
+
+/**
+ * Génère UN seul jour (mode semaine progressive).
+ * Passe l'historique complet des jours déjà générés pour garantir variété et mémoire.
+ */
+export async function generateOneDay(
+  payload: GeneratePayload,
+  jourNom: string,
+  historyJours: DailyMealPlan[],
+): Promise<DailyMealPlan> {
+  const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+  const autresJours = JOURS.filter((j) => j !== jourNom && !historyJours.some((h) => h.jour === j));
+  const res = await postRaw<{ plan: DailyMealPlan }>("/api/generate/day", {
+    form: payload.form,
+    calc: payload.calc,
+    locale: payload.locale,
+    jourNom,
+    autresJours,
+    historyJours,
+  });
+  return res.plan;
+}
+
+/** Génère l'analyse médicale seule. */
+export async function generateAnalyse(payload: GeneratePayload): Promise<MedicalAnalysis> {
+  const res = await postJson<{ analyse: MedicalAnalysis }>("/api/generate/analyse", payload);
+  return res.analyse;
 }
 
 /** Modifie un jour de menu via instruction libre (chat). Renvoie le jour mis à jour. */

@@ -5,11 +5,20 @@ import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { patientFormSchema, type PatientFormSchema } from "@/lib/schema";
 import { computeAll } from "@/lib/calculations";
-import type { CalculationResult, GeneratedProgram, PatientForm, Locale, NutritionResult, SportResult } from "@/types";
+import type { CalculationResult, GeneratedProgram, PatientForm, Locale, NutritionResult, SportResult, DailyMealPlan, MedicalAnalysis } from "@/types";
 import { assembleProgram } from "@/lib/ai/client";
 import { useI18n } from "@/locales";
 import { TOTAL_STEPS } from "@/lib/constants";
 import { defaultSections, type SectionKey } from "@/lib/export/sections";
+
+/** Type de programme : jour unique ou semaine progressive. */
+export type ProgramType = "day" | "week";
+
+/** Un jour de la semaine avec son historique de chat. */
+export interface WeekDay {
+  jourNom: string;
+  plan: DailyMealPlan;
+}
 
 interface WizardContextValue {
   form: UseFormReturn<PatientFormSchema>;
@@ -40,6 +49,18 @@ interface WizardContextValue {
   /** Sections à inclure dans le rapport exporté. */
   reportSections: Record<SectionKey, boolean>;
   setReportSections: React.Dispatch<React.SetStateAction<Record<SectionKey, boolean>>>;
+  /** Type de programme choisi par le médecin : jour unique ou semaine progressive. */
+  programType: ProgramType;
+  setProgramType: (t: ProgramType) => void;
+  /** Jours déjà générés (mode semaine progressive). */
+  weeklyPlans: WeekDay[];
+  setWeeklyPlans: React.Dispatch<React.SetStateAction<WeekDay[]>>;
+  /** Analyse médicale générée (partagée entre modes). */
+  weeklyAnalyse: MedicalAnalysis | null;
+  setWeeklyAnalyse: (a: MedicalAnalysis | null) => void;
+  /** Index du jour actif dans weeklyPlans (mode semaine). */
+  activeDay: number;
+  setActiveDay: (i: number) => void;
 }
 
 const WizardContext = createContext<WizardContextValue | null>(null);
@@ -85,6 +106,10 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   const [generatedLocale, setGeneratedLocale] = useState<Locale>(locale);
   const [mealDuration, setMealDuration] = useState<number>(1);
   const [reportSections, setReportSections] = useState<Record<SectionKey, boolean>>(defaultSections);
+  const [programType, setProgramType] = useState<ProgramType>("day");
+  const [weeklyPlans, setWeeklyPlans] = useState<WeekDay[]>([]);
+  const [weeklyAnalyse, setWeeklyAnalyse] = useState<MedicalAnalysis | null>(null);
+  const [activeDay, setActiveDay] = useState<number>(0);
 
   // Programme complet assemblé (disponible quand les deux sont générés).
   const program: GeneratedProgram | null =
@@ -129,9 +154,17 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
       setMealDuration,
       reportSections,
       setReportSections,
+      programType,
+      setProgramType,
+      weeklyPlans,
+      setWeeklyPlans,
+      weeklyAnalyse,
+      setWeeklyAnalyse,
+      activeDay,
+      setActiveDay,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [form, step, calc, nutritionResult, sportResult, program, isGeneratingNutrition, isGeneratingSport, generatedLocale, mealDuration, reportSections],
+    [form, step, calc, nutritionResult, sportResult, program, isGeneratingNutrition, isGeneratingSport, generatedLocale, mealDuration, reportSections, programType, weeklyPlans, weeklyAnalyse, activeDay],
   );
 
   return <WizardContext.Provider value={value}>{children}</WizardContext.Provider>;

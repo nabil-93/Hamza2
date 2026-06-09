@@ -12,16 +12,18 @@ interface Body {
   locale: Locale;
   jourNom: string;
   autresJours?: string[];
+  /** Jours déjà générés cette semaine (mode progressif) — mémoire de l'IA. */
+  historyJours?: DailyMealPlan[];
 }
 
-/** Génère le menu d'UN SEUL jour (réponse courte → rapide, pour parallélisation). */
+/** Génère le menu d'UN SEUL jour (réponse courte → rapide). */
 export async function POST(req: NextRequest) {
   try {
-    const { form, calc, locale, jourNom, autresJours } = (await req.json()) as Body;
+    const { form, calc, locale, jourNom, autresJours, historyJours } = (await req.json()) as Body;
     const plan = await generateJson<DailyMealPlan>(
-      buildSingleDayPrompt(form, calc, locale, jourNom, autresJours ?? []),
+      buildSingleDayPrompt(form, calc, locale, jourNom, autresJours ?? [], historyJours ?? []),
       undefined,
-      0.85, // température élevée → variété entre patients
+      0.85,
     );
     return NextResponse.json({ plan });
   } catch (err) {

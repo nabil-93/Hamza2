@@ -451,7 +451,8 @@ export function dayRole(jourNom: string): {
 
 /**
  * Génère UN SEUL jour de menu (réponse courte → rapide).
- * Utilisé pour la génération parallèle d'une semaine (1 requête par jour).
+ * Utilisé pour la génération jour-par-jour (mode semaine progressive).
+ * historyJours = jours déjà générés cette semaine (mémoire complète).
  */
 export function buildSingleDayPrompt(
   form: PatientForm,
@@ -459,6 +460,7 @@ export function buildSingleDayPrompt(
   locale: Locale,
   jourNom: string,
   autresJours: string[],
+  historyJours: DailyMealPlan[] = [],
 ): string {
   const repasStruct = form.modeRamadan
     ? `"type" parmi : "Ftour", "Collation après Tarawih", "Shour"`
@@ -469,8 +471,54 @@ export function buildSingleDayPrompt(
       ? `\n- C'est VENDREDI : couscous au déjeuner (tradition marocaine).`
       : `\n- Ce n'est PAS vendredi : AUCUN couscous.`;
 
+  // Mémoire des jours déjà générés : extraire protéines, féculents, petits-dej déjà utilisés
+  let memoireBlock = "";
+  if (historyJours.length > 0) {
+    const proteinesUsees: string[] = [];
+    const petitDejUsees: string[] = [];
+    const dinerUsees: string[] = [];
+
+    historyJours.forEach((j) => {
+      j.repas.forEach((r) => {
+        if (r.type.toLowerCase().includes("déjeuner") && !r.type.toLowerCase().includes("petit")) {
+          proteinesUsees.push(`${j.jour}: ${r.nom}`);
+        }
+        if (r.type.toLowerCase().includes("petit")) {
+          petitDejUsees.push(`${j.jour}: ${r.nom}`);
+        }
+        if (r.type.toLowerCase().includes("dîner") || r.type.toLowerCase().includes("diner")) {
+          dinerUsees.push(`${j.jour}: ${r.nom}`);
+        }
+      });
+    });
+
+    const poissonCount = historyJours.filter((j) =>
+      j.repas.some((r) => {
+        const nom = r.nom.toLowerCase();
+        return nom.includes("poisson") || nom.includes("sardine") || nom.includes("maquereau") || nom.includes("merlan") || nom.includes("thon") || nom.includes("saumon");
+      })
+    ).length;
+
+    const lentillesCount = historyJours.filter((j) =>
+      j.repas.some((r) => r.ingredients?.some((i) => i.nom.toLowerCase().includes("lentille")))
+    ).length;
+
+    memoireBlock = `
+
+MÉMOIRE DE LA SEMAINE (jours déjà générés — NE PAS RÉPÉTER les mêmes plats) :
+${historyJours.map((j) => `• ${j.jour} : ${j.repas.map((r) => `${r.type}=${r.nom}`).join(", ")}`).join("\n")}
+
+Déjeuners déjà utilisés (protéines) : ${proteinesUsees.join(" | ") || "aucun"}
+Petits-déjeuners déjà utilisés : ${petitDejUsees.join(" | ") || "aucun"}
+Dîners déjà utilisés : ${dinerUsees.join(" | ") || "aucun"}
+Poisson utilisé : ${poissonCount}/2 fois cette semaine${poissonCount >= 2 ? " → INTERDIT d'utiliser du poisson ce jour" : " → encore autorisé si le rôle du jour l'indique"}.
+Lentilles utilisées : ${lentillesCount}/2 fois cette semaine${lentillesCount >= 2 ? " → INTERDIT d'utiliser des lentilles ce jour" : ""}.
+
+RÈGLE ABSOLUE : le menu de « ${jourNom} » doit être ENTIÈREMENT DIFFÉRENT de tous les jours ci-dessus (aucun plat, aucun petit-déjeuner, aucun dîner identique).`;
+  }
+
   const eviter =
-    autresJours.length > 0
+    autresJours.length > 0 && historyJours.length === 0
       ? `\nVARIÉTÉ STRICTE : chaque jour de la semaine doit être TOTALEMENT DIFFÉRENT des autres (${autresJours.join(", ")}). Ne répète AUCUN plat — ni le même petit-déjeuner, ni le même déjeuner, ni le même dîner. Varie les protéines, les féculents, les légumes et les modes de cuisson.`
       : ``;
 
@@ -500,7 +548,7 @@ BANQUE DE RÉFÉRENCE (inspire-toi librement, NE recopie JAMAIS à l'identique, 
 • Féculents autorisés (petites portions) : ${FECULENTS_AUTORISES.join(", ")}.
 IMPORTANT : pioche et combine différemment à chaque jour et à chaque patient pour que deux programmes ne soient jamais identiques.`;
 
-  return `${listProfile(form, calc, locale)}${buildPatientConstraints(form)}
+  return `${listProfile(form, calc, locale)}${buildPatientConstraints(form)}${memoireBlock}
 
 TÂCHE : Génère le menu du jour « ${jourNom} » uniquement (~${calc.caloriesObjectif} kcal), conforme au régime méditerranéen et au référentiel EMC.${couscousNote}${eviter}${roleGuidance}${banque}
 
