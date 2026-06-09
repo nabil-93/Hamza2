@@ -162,7 +162,7 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
 
       {/* Contenu développé */}
       {isActive && (
-        <div className="grid gap-4 border-t border-border p-4 lg:grid-cols-[1.6fr_1fr]">
+        <div className="grid gap-4 border-t border-border p-4 lg:grid-cols-2">
           {/* Colonne gauche : repas du jour */}
           <div className="space-y-3">
             {plan.repas.map((repas, i) => {
@@ -217,24 +217,36 @@ export function DayPanel({ plan, form, calc, locale, dayIndex, onUpdateDay, isAc
                       </button>
                     </div>
                   </div>
-                  <ul className={cn("grid gap-x-6 gap-y-1.5 text-xs text-muted-foreground sm:grid-cols-2", isRegen && "opacity-40")}>
-                    {repas.ingredients.map((ing, j) => (
-                      <li
-                        key={j}
-                        className="flex items-center justify-between gap-3 border-b border-dashed border-border/60 pb-1.5 last:border-0 last:pb-0"
-                      >
-                        <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                          <span className="truncate">{ing.nom}</span>
-                          {ing.preparation && (
-                            <span className="shrink-0 rounded-full bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700">
-                              {ing.preparation}
-                            </span>
-                          )}
-                        </span>
-                        <span className="shrink-0 whitespace-nowrap font-semibold text-foreground">{ing.quantite}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {(() => {
+                    // Répartit les ingrédients sur deux colonnes séparées par un trait
+                    // vertical continu : la moitié à gauche, le reste à droite.
+                    const mid = Math.ceil(repas.ingredients.length / 2);
+                    const cols = [repas.ingredients.slice(0, mid), repas.ingredients.slice(mid)];
+                    return (
+                      <div className={cn("grid gap-x-6 sm:grid-cols-2 sm:divide-x sm:divide-border", isRegen && "opacity-40")}>
+                        {cols.map((col, c) => (
+                          <ul key={c} className={cn("space-y-1.5 text-xs text-muted-foreground", c === 1 && "sm:ps-6")}>
+                            {col.map((ing, j) => (
+                              <li
+                                key={j}
+                                className="flex items-center justify-between gap-3 border-b border-dashed border-border/60 pb-1.5 last:border-0 last:pb-0"
+                              >
+                                <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                  <span className="truncate">{ing.nom}</span>
+                                  {ing.preparation && (
+                                    <span className="shrink-0 rounded-full bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700">
+                                      {ing.preparation}
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="shrink-0 whitespace-nowrap font-semibold text-foreground">{ing.quantite}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
