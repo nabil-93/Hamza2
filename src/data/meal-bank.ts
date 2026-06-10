@@ -6,12 +6,10 @@
 
 /** Petit-déjeuner — propositions (1 au choix par jour), SANS fruit. */
 export const PETIT_DEJ_OPTIONS = [
-  "1 œuf au plat ou omelette + assiette de légumes (concombre, tomate, laitue) + 50 g de pain complet + 1 c. à café d'huile d'olive",
-  "1 œuf dur + ¼ d'avocat + assiette de légumes + 50 g de pain complet",
-  "½ avocat + assiette de légumes (concombre, tomate, laitue) + 50 g de pain complet",
-  "1 bol de belboula d'orge cuite (sans sucre) + fromage frais + olives",
-  "2 œufs durs + assiette de crudités + 50 g de pain complet + huile d'olive",
-  "Fromage frais (50 g) + œuf + assiette de légumes + 50 g de pain complet/pain d'orge",
+  "Assiette de légumes (concombre, tomate, laitue) + 1 œuf au plat ou dur + 50 g de pain complet (ou 2 toasts) + 1 c. à café d'huile d'olive",
+  "Assiette de légumes (concombre, tomate, laitue) + ½ avocat + 50 g de pain complet (ou 2 toasts)",
+  "Assiette de légumes (concombre, tomate, laitue) + ¼ d'avocat + 1 œuf dur + 50 g de pain complet (ou 2 toasts)",
+  "1 bol de belboula d'orge cuite dans l'eau (ou avoine, sans sucre) + 50 g de pain complet + 1 c. à café d'huile d'olive",
 ];
 
 /** Petit-déjeuner — boisson chaude (sans sucre). */
@@ -28,21 +26,25 @@ export const DEJEUNER_PROTEINE_PAR_JOUR: Record<string, string> = {
   Dimanche: "150 g de poisson (cabillaud, sole, lotte) ou plat familial élaboré",
 };
 
+/** Protéines autorisées au déjeuner (150 g), toute la liste — sert de pool global. */
+export const DEJEUNER_PROTEINES_AUTORISEES = [
+  "poulet", "maquereaux", "saumon", "thon", "sole", "lotte", "sardines",
+  "brochettes de poulet", "viande hachée", "steak de viande",
+];
+
 /**
  * DÎNER — banque d'options (à piocher en VARIANT, protéine toujours présente).
  * JAMAIS d'œuf ni de poisson au dîner (œuf = petit-déjeuner uniquement,
  * poisson = déjeuner uniquement).
  */
 export const DINER_OPTIONS = [
-  "Soupe de légumes + 150 g de viande hachée sans graisse",
   "Soupe de légumes + 150 g de poulet",
-  "Chorba légère + 150 g de poulet",
-  "Velouté de légumes + 120 g de dinde + fromage",
-  "Tajine de légumes + 150 g de poulet",
+  "Soupe de légumes + 150 g de viande hachée maigre",
   "Légumes au four + 150 g de poulet",
-  "Légumes vapeur + 150 g de blanc de dinde",
+  "Légumes au four + 150 g de fruits de mer",
   "Légumes sautés + 150 g de poulet",
-  "Légumes au four + 150 g de dinde",
+  "Légumes sautés + 150 g de viande maigre",
+  "Soupe de légumes + 150 g de dinde",
 ];
 
 /** Légumes autorisés (consommés cuits ou crus). */

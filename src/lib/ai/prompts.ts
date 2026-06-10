@@ -6,6 +6,8 @@ import {
   DINER_OPTIONS,
   LEGUMES_AUTORISES,
   FECULENTS_AUTORISES,
+  DEJEUNER_PROTEINES_AUTORISEES,
+  BOISSONS_CHAUDES,
 } from "@/data/meal-bank";
 
 /** System prompt pour l'assistant de modification ciblée du programme. */
@@ -177,7 +179,7 @@ export function buildRegenerateMealPrompt(
       return (tt.includes("déjeuner") || tt.includes("dejeuner")) && !tt.includes("petit");
     });
     const plafond = dej ? ` Les calories du dîner doivent rester INFÉRIEURES à celles du déjeuner (${dej.calories} kcal) — le dîner est plus léger que le déjeuner.` : "";
-    regleRepas = `C'est le DÎNER : toujours une protéine explicite (volaille/viande/fromage) + légumes + pain complet. JAMAIS d'œuf au dîner (l'œuf est réservé au petit-déjeuner). JAMAIS de poisson au dîner. Pas de fruit.${plafond}`;
+    regleRepas = `C'est le DÎNER : DOIT être EXACTEMENT l'une de ces 7 options (légumes/soupe + protéine, RIEN d'autre — pas de pain, pas de fromage, pas de yaourt) :\n${DINER_OPTIONS.map((o, i) => `${i + 1}. ${o}`).join("\n")}\nJAMAIS d'œuf au dîner (l'œuf est réservé au petit-déjeuner). JAMAIS de poisson au dîner. Pas de fruit.${plafond}`;
   }
 
   const couscousNote =
@@ -261,12 +263,12 @@ Formule chaque plat de façon SIMPLE et DIRECTE, comme une ORDONNANCE NUTRITIONN
 - Le champ "nom" de chaque repas doit rester COURT et descriptif (ex. « Salade + poulet grillé + riz complet »), jamais un titre de recette de chef.
 
 == STRUCTURE OBLIGATOIRE DU PETIT-DÉJEUNER ==
-Le petit-déjeuner ne doit JAMAIS se résumer à un yaourt + un fruit. Il DOIT contenir :
-1. Glucides complexes : pain complet, pain d'orge, msemen complet (à l'huile d'olive), harcha complète, baghrir complet, belboula d'orge ou autre céréale complète marocaine. (N'utilise PAS de flocons d'avoine ni de quinoa.)
-2. Protéines : œufs, fromage frais, fromage blanc nature (non sucré).
-3. Bonnes graisses : amandes, noix, graines, huile d'olive, avocat ou olives.
+Le petit-déjeuner DOIT être EXACTEMENT L'UNE des 4 OPTIONS SUIVANTES (choisis-en une, varie d'un jour à l'autre, AUCUNE autre composition n'est autorisée) :
+${PETIT_DEJ_OPTIONS.map((o, i) => `${i + 1}. ${o}`).join("\n")}
+Plus, chaque jour, une boisson chaude sans sucre (${BOISSONS_CHAUDES.join(", ")}).
+Reformule l'option choisie en ingrédients chiffrés (ex. « Concombre 50 g, Tomate 50 g, Laitue 30 g, Œuf au plat 1, Pain complet 50 g, Huile d'olive 5 g, Thé sans sucre »), mais NE CHANGE PAS la composition de l'option (toujours l'assiette de légumes concombre/tomate/laitue, sauf pour l'option belboula).
 
-ALIMENTS AUTORISÉS au petit-déjeuner UNIQUEMENT : œufs, avocat, pain complet, pain d'orge, belboula, fromage frais, fromage blanc nature, olives, huile d'olive, thé, café, infusion.
+ALIMENTS AUTORISÉS au petit-déjeuner UNIQUEMENT : œufs, avocat, pain complet, belboula d'orge ou avoine, légumes (concombre, tomate, laitue), huile d'olive, thé, café, infusion.
 
 RÈGLE ABSOLUE — INTERDIT au petit-déjeuner (AUCUNE EXCEPTION) :
 - AUCUN fruit, sous quelque forme que ce soit (frais, séché, en jus, en compote).
@@ -275,16 +277,21 @@ RÈGLE ABSOLUE — INTERDIT au petit-déjeuner (AUCUNE EXCEPTION) :
 Les fruits et desserts sont réservés EXCLUSIVEMENT au DÉJEUNER (1 portion en fin de repas).
 Objectif : repas rassasiant et équilibré, sans aucune trace de fruit ou de sucre ajouté.
 
-== STRUCTURE OBLIGATOIRE DU DÉJEUNER ET DU DÎNER (Tableau 8) ==
-RÈGLE ABSOLUE : le DÉJEUNER et le DÎNER de CHAQUE jour DOIVENT CHACUN contenir une source de protéine animale ou végétale clairement identifiée et chiffrée. Jamais un déjeuner ni un dîner sans protéine, même quand c'est une soupe ou une salade : dans ce cas, AJOUTE une protéine (poulet, viande hachée, thon, fromage en quantité protéique, pois chiches). ⚠️ L'ŒUF EST INTERDIT AU DÎNER (et au déjeuner) : l'œuf/l'omelette ne se met QU'AU PETIT-DÉJEUNER. N'utilise jamais d'œuf comme protéine du dîner ni du déjeuner.
-Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justification médicale) :
+== STRUCTURE OBLIGATOIRE DU DÉJEUNER (Tableau 8) ==
+RÈGLE ABSOLUE : le DÉJEUNER de CHAQUE jour DOIT contenir une source de protéine animale clairement identifiée et chiffrée. ⚠️ L'ŒUF EST INTERDIT AU DÉJEUNER : l'œuf/l'omelette ne se met QU'AU PETIT-DÉJEUNER.
+Le déjeuner DOIT contenir TOUS ces éléments (aucun omis sans justification médicale) :
 1. Crudités.
-2. Source protéique OBLIGATOIRE et clairement listée dans les ingrédients avec sa quantité : viande maigre 100-120 g OU poisson 150-200 g OU volaille 120 g OU thon OU légumineuses 150 g. PAS d'œuf au déjeuner ni au dîner (l'œuf est réservé au petit-déjeuner). AUCUN repas principal (déjeuner, dîner) sans protéine explicite. Une soupe au dîner DOIT être accompagnée d'une protéine (ex. soupe de légumes + blanc de poulet, ou + dinde, ou + fromage).
+2. Source protéique OBLIGATOIRE et clairement listée dans les ingrédients avec sa quantité : viande maigre 100-120 g OU poisson 150-200 g OU volaille 120 g OU thon OU légumineuses 150 g. PAS d'œuf au déjeuner (l'œuf est réservé au petit-déjeuner).
 3. Légumes à volonté.
 4. Féculent complet (riz/pâtes/semoule/pomme de terre/légumes secs).
-5. Pain complet : OBLIGATOIRE à chaque déjeuner ET dîner, listé dans les ingrédients (ex. « Pain complet : 50 g »). Ne l'oublie jamais.
+5. Pain complet : OBLIGATOIRE au déjeuner, listé dans les ingrédients (ex. « Pain complet : 50 g »). Ne l'oublie jamais.
 6. Produit laitier (yaourt nature ou fromage).
 Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité.
+
+== STRUCTURE OBLIGATOIRE DU DÎNER — BANQUE FERMÉE (DINER_OPTIONS) ==
+Le dîner DOIT être EXACTEMENT L'UNE des 7 OPTIONS SUIVANTES (choisis-en une, varie d'un jour à l'autre, AUCUNE autre composition n'est autorisée) :
+${DINER_OPTIONS.map((o, i) => `${i + 1}. ${o}`).join("\n")}
+Reformule l'option choisie en ingrédients chiffrés (ex. « Soupe de légumes 300 g, Blanc de poulet 150 g »), mais N'AJOUTE RIEN D'AUTRE : PAS de pain, PAS de fromage, PAS de yaourt, PAS de produit laitier, PAS de féculent supplémentaire, PAS d'huile listée séparément. Le dîner se limite STRICTEMENT aux deux composants de l'option choisie (légumes/soupe + protéine en grammes). AUCUN œuf, AUCUN poisson, AUCUN fruit, AUCUN dessert au dîner.
 
 == RÈGLES SPÉCIFIQUES SUPPLÉMENTAIRES ==
 - DÉJEUNER = repas PRINCIPAL de la journée (le plus complet et copieux). RÈGLE ABSOLUE : le déjeuner DOIT contenir EXACTEMENT 1 portion de fruit en dessert (ni 0, ni 2). C'est le SEUL repas de la journée qui contient un fruit ou un dessert.
@@ -488,7 +495,7 @@ export function buildNutritionPrompt(
 ): string {
   const repasStruct = form.modeRamadan
     ? `"type" parmi : "Ftour", "Collation après Tarawih", "Shour"`
-    : `"type" parmi : "Petit-déjeuner", "Collation matin", "Déjeuner", "Collation après-midi", "Dîner"`;
+    : `"type" parmi : "Petit-déjeuner", "Déjeuner", "Dîner" (EXACTEMENT 3 repas/jour, AUCUNE collation)`;
 
   const dureeTexte =
     duration === 1
@@ -516,15 +523,16 @@ TÂCHE : Génère ${dureeTexte} (~${calc.caloriesObjectif} kcal par jour), des r
 CONTRAINTES ISSUES DU RÉFÉRENTIEL EMC (à respecter impérativement) :
 - BASE OBLIGATOIRE : régime MÉDITERRANÉEN (huile d'olive, légumes, légumineuses, céréales complètes, poisson plusieurs fois/semaine, peu de viande rouge), exprimé en cuisine marocaine saine.
 - Répartition des macros CHAQUE jour : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 % de ${calc.caloriesObjectif} kcal. Calcule les grammes en conséquence.
-- Déjeuner et dîner doivent suivre la structure du repas « vertueux » : crudités/potage + viande(100-120g) ou poisson(150-200g, déjeuner uniquement) ou volaille + légumes verts à volonté + 1 portion de féculents + 1 tranche de pain + 1 produit laitier (yaourt/fromage).
-- ⚠️ ŒUF : UNIQUEMENT au PETIT-DÉJEUNER. JAMAIS d'œuf au déjeuner ni au dîner, sous aucune forme (ni dur, ni omelette, ni au plat). La protéine du dîner est de la volaille, viande ou fromage (jamais œuf, jamais poisson).
-- OBLIGATOIRE pour CHAQUE déjeuner et dîner : lister explicitement dans les ingrédients le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec quantité. Ne les oublie jamais.
+- Déjeuner : doit suivre la structure du repas « vertueux » : crudités/potage + viande(100-120g) ou poisson(150-200g) ou volaille + légumes verts à volonté + 1 portion de féculents + 1 tranche de pain + 1 produit laitier (yaourt/fromage).
+- Dîner : EXCLUSIVEMENT l'une des 7 options de la banque DINER_OPTIONS (légumes/soupe + protéine, RIEN d'autre — pas de pain, pas de produit laitier).
+- ⚠️ ŒUF : UNIQUEMENT au PETIT-DÉJEUNER. JAMAIS d'œuf au déjeuner ni au dîner, sous aucune forme (ni dur, ni omelette, ni au plat). La protéine du dîner est exclusivement celle de l'option DINER_OPTIONS choisie (volaille, viande, dinde ou fruits de mer — jamais œuf, jamais poisson, jamais fromage).
+- OBLIGATOIRE pour CHAQUE déjeuner : lister explicitement dans les ingrédients le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec quantité. Ne les oublie jamais.
 - Au moins 5 portions de fruits/légumes sur la journée, féculents complets, 3 produits laitiers, poisson présent dans la semaine.
 - Huile d'olive/colza pour les matières grasses, sel limité, eau à volonté, sucres simples limités.${form.objectif === "perte_poids" ? "\n- Profil en perte de poids : régime hypocalorique MODÉRÉ (~700 kcal/repas femme, ~830 kcal/repas homme), jamais agressif." : ""}${duration > 1 ? `\n- VARIÉTÉ OBLIGATOIRE : ne répète pas les mêmes plats d'un jour à l'autre ; alterne poisson, légumineuses, volaille, œufs et varie les légumes et féculents sur les ${duration} jours.` : ""}
 
 BANQUE DE RÉFÉRENCE (inspire-toi de ces modèles, MAIS VARIE — deux patients ne doivent jamais avoir le même programme) :
 • Petit-déjeuner (SANS fruit) : ${PETIT_DEJ_OPTIONS.slice(0, 4).join(" | ")}.
-• Déjeuner : crudités + 150 g de protéine + petit féculent (50-100 g) + 1 fruit en dessert.
+• Déjeuner : crudités + 150 g de protéine (${DEJEUNER_PROTEINES_AUTORISEES.join(", ")}) + petit féculent (50-100 g) + 1 fruit en dessert.
 • Dîner (toujours une protéine) : ${DINER_OPTIONS.slice(0, 6).join(" | ")}.
 • Légumes autorisés : ${LEGUMES_AUTORISES.slice(0, 14).join(", ")}…
 
@@ -656,25 +664,12 @@ export function dayRole(jourNom: string, historyJours: DailyMealPlan[] = []): {
     }
   }
 
-  // Petit-déjeuner : base aléatoire, formulation simple façon ordonnance (sans fruit).
-  const breakfast = pick([
-    "1 œuf au plat ou omelette + pain complet + huile d'olive",
-    "¼ d'avocat + pain complet + huile d'olive",
-    "1 œuf dur + ¼ avocat + pain complet",
-    "bol de belboula d'orge cuite + pain complet",
-    "fromage frais + pain complet + huile d'olive",
-    "2 œufs durs + pain complet + huile d'olive",
-  ]);
+  // Petit-déjeuner : base aléatoire parmi les 4 options de référence (sans fruit).
+  const breakfast = pick(PETIT_DEJ_OPTIONS);
 
-  // Dîner : tiré aléatoirement, TOUJOURS avec protéine (jamais d'œuf ni de poisson au dîner).
-  const dinner = pick([
-    "soupe de légumes + 150 g de poulet",
-    "soupe de légumes + 150 g de viande hachée sans graisse",
-    "légumes au four + 150 g de poulet",
-    "légumes sautés + 150 g de dinde",
-    "légumes au four + 150 g de dinde",
-    "légumes sautés + 150 g de viande maigre",
-  ]);
+  // Dîner : tiré aléatoirement parmi les 7 options de référence, TOUJOURS avec
+  // protéine (jamais d'œuf ni de poisson au dîner).
+  const dinner = pick(DINER_OPTIONS);
 
   // Féculent : tiré aléatoirement.
   const starch = pick([
@@ -712,7 +707,7 @@ export function buildSingleDayPrompt(
 ): string {
   const repasStruct = form.modeRamadan
     ? `"type" parmi : "Ftour", "Collation après Tarawih", "Shour"`
-    : `"type" parmi : "Petit-déjeuner", "Collation matin", "Déjeuner", "Collation après-midi", "Dîner"`;
+    : `"type" parmi : "Petit-déjeuner", "Déjeuner", "Dîner" (EXACTEMENT 3 repas/jour, AUCUNE collation)`;
 
   const couscousNote =
     jourNom.toLowerCase() === "vendredi"
@@ -772,28 +767,27 @@ RÈGLE ABSOLUE : le menu de « ${jourNom} » doit être ENTIÈREMENT DIFFÉRENT 
   const roleGuidance = role
     ? `\n\nCONTRAINTES DE CE JOUR (à respecter, mais COMPOSE librement les plats — varie le style, les recettes, les légumes, les modes de cuisson) :
 - Déjeuner : ${role.lunch} (tu peux choisir une recette marocaine différente avec cette protéine).
-- Dîner : oriente-toi vers « ${role.dinner} » mais propose un plat DIFFÉRENT et original (jamais le même qu'un autre jour).
-- Féculent principal : autour de ${role.starch}, mais libre de varier.
+- Dîner : DOIT être EXACTEMENT « ${role.dinner} » (cette option de la banque DINER_OPTIONS imposée), reformulée en ingrédients chiffrés (ex. « Soupe de légumes 300 g, Blanc de poulet 150 g »). RIEN D'AUTRE : pas de pain, pas de fromage, pas de yaourt, pas de féculent, pas d'huile listée séparément.
+- Féculent principal : autour de ${role.starch}, mais libre de varier (déjeuner uniquement — pas de féculent au dîner).
 - ${role.pace}`
     : ``;
 
   // Tirage pseudo-aléatoire pour forcer la diversité d'une génération à l'autre.
   const seed = Math.floor(Math.random() * 100000);
   const shuffled = [...PETIT_DEJ_OPTIONS].sort(() => Math.random() - 0.5).slice(0, 3);
-  const dinerSample = [...DINER_OPTIONS].sort(() => Math.random() - 0.5).slice(0, 3);
   const legumesSample = [...LEGUMES_AUTORISES].sort(() => Math.random() - 0.5).slice(0, 8);
   const feculentsSample = [...FECULENTS_AUTORISES].sort(() => Math.random() - 0.5).slice(0, 4);
 
   // Banque de référence (modèles du médecin) — l'IA s'en inspire et VARIE.
   const banque = `\n\nVARIANTE #${seed} — compose un menu ORIGINAL et différent de toute version précédente.
 
-EXEMPLES D'INSPIRATION (NE recopie JAMAIS à l'identique, change l'ordre et les combinaisons) :
+EXEMPLES D'INSPIRATION pour le PETIT-DÉJEUNER et le DÉJEUNER (NE recopie JAMAIS à l'identique, change l'ordre et les combinaisons) :
 • Petit-déjeuner (SANS fruit), exemples : ${shuffled.join(" | ")}.
 • Déjeuner : assiette de crudités/légumes + 150 g de protéine + petit féculent (50-100 g) + 1 fruit en dessert.
-• Dîner, exemples : ${dinerSample.join(" | ")} (TOUJOURS avec une protéine).
 • Légumes (cuits ou crus, à volonté), exemples : ${legumesSample.join(", ")}, etc.
 • Féculents complets (petites portions), exemples : ${feculentsSample.join(", ")}, etc.
-IMPORTANT : pioche et combine différemment à chaque jour et à chaque patient pour que deux programmes ne soient jamais identiques.`;
+Pour le DÎNER, voir la BANQUE FERMÉE DINER_OPTIONS imposée plus haut (7 options EXACTES, aucun ajout).
+IMPORTANT : pioche et combine différemment à chaque jour et à chaque patient pour que deux programmes ne soient jamais identiques (sauf le dîner, qui reste dans les 7 options imposées).`;
 
   return `${listProfile(form, calc, locale)}${buildPatientConstraints(form)}${memoireBlock}
 
@@ -818,8 +812,8 @@ Pour CHAQUE ingrédient, indique son mode de préparation dans "preparation" ave
 
 Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
 RÈGLE CALORIQUE ABSOLUE : les calories du DÉJEUNER doivent être SUPÉRIEURES à celles du DÎNER (déjeuner > dîner). Le déjeuner est le repas le plus copieux, le dîner reste plus léger. Vérifie ce point avant de répondre et ajuste les portions si besoin.
-OBLIGATOIRE : à chaque déjeuner et dîner, liste explicitement le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec sa quantité (viande/poisson/volaille/œufs/légumineuses). Le petit-déjeuner doit aussi contenir une protéine.
-RAPPELS : le DÉJEUNER est le repas principal et se termine TOUJOURS par 1 fruit frais. ⚠️ L'ŒUF (œuf dur, au plat, omelette, œufs brouillés) ne se met QU'AU PETIT-DÉJEUNER — JAMAIS au déjeuner, JAMAIS au dîner. La protéine du dîner doit être de la volaille, viande ou fromage (pas d'œuf, pas de poisson). PAS de quinoa ni de flocons d'avoine.`;
+OBLIGATOIRE : au déjeuner, liste explicitement le PAIN COMPLET (ex. « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE avec sa quantité (viande/poisson/volaille/œufs/légumineuses). Le petit-déjeuner doit aussi contenir une protéine. Le DÎNER NE contient QUE les deux composants de l'option DINER_OPTIONS choisie (légumes/soupe + protéine en grammes) — AUCUN pain, AUCUN fromage, AUCUN yaourt, AUCUN féculent supplémentaire au dîner.
+RAPPELS : le DÉJEUNER est le repas principal et se termine TOUJOURS par 1 fruit frais. ⚠️ L'ŒUF (œuf dur, au plat, omelette, œufs brouillés) ne se met QU'AU PETIT-DÉJEUNER — JAMAIS au déjeuner, JAMAIS au dîner. La protéine du dîner est exclusivement celle de l'option DINER_OPTIONS choisie (volaille, viande, dinde ou fruits de mer — pas d'œuf, pas de poisson, pas de fromage). PAS de quinoa ni de flocons d'avoine.`;
 }
 
 /**

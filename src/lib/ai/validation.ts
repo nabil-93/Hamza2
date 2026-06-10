@@ -15,9 +15,23 @@ const MOTS_DESSERT = [
 
 const MOTS_OEUF = ["œuf", "oeuf"];
 
-/** Mots-clés poisson/fruits de mer (toute mention, même en garniture). */
+/**
+ * Mots-clés d'aliments INTERDITS au dîner par la banque fermée DINER_OPTIONS
+ * (légumes/soupe + protéine UNIQUEMENT — aucun ajout de pain, laitage, féculent...).
+ */
+const MOTS_HORS_BANQUE_DINER = [
+  "fromage", "yaourt", "yahourt", "pain", "riz", "pâtes", "pates", "semoule",
+  "boulgour", "pomme de terre", "huile",
+];
+
+/**
+ * Mots-clés POISSON au sens strict (toute mention, même en garniture).
+ * Les fruits de mer (crevette, moules, calamar...) sont autorisés au dîner
+ * (cf. DINER_OPTIONS « Légumes au four + fruits de mer ») et NE comptent PAS
+ * dans le quota poisson — voir `MOTS_FRUITS_DE_MER`.
+ */
 const MOTS_POISSON = [
-  "poisson", "sardine", "maquereau", "thon", "merlan", "saumon", "cabillaud", "sole", "lotte", "dorade", "crevette",
+  "poisson", "sardine", "maquereau", "thon", "merlan", "saumon", "cabillaud", "sole", "lotte", "dorade",
 ];
 
 function texteRepas(repas: Meal): string {
@@ -70,6 +84,8 @@ export const POISSON_OBJECTIF_HEBDO = 2;
  * - poisson au petit-déjeuner ou au dîner (réservé au déjeuner)
  * - poisson au déjeuner au-delà du quota hebdomadaire EXACT de 2
  * - dernier jour de la semaine : quota poisson PAS ENCORE ATTEINT (jamais 0, jamais 1)
+ * - dîner contenant un ingrédient hors banque fermée DINER_OPTIONS (pain,
+ *   fromage, yaourt, féculent, huile listée séparément...)
  * (le petit-déjeuner sans fruit/dessert et le déjeuner avec exactement 1 fruit
  * sont déjà couverts par le prompt et ne sont pas re-vérifiés ici.)
  *
@@ -100,6 +116,14 @@ export function detecterAnomaliesJour(
       if (contient(texte, MOTS_DESSERT)) raisons.push("dessert au dîner");
       if (contient(texte, MOTS_OEUF)) raisons.push("œuf au dîner");
       if (poissonIci) raisons.push("poisson au dîner");
+      const ingredientsHorsBanque = (repas.ingredients ?? []).filter((ing) =>
+        contient(ing.nom.toLowerCase(), MOTS_HORS_BANQUE_DINER),
+      );
+      if (ingredientsHorsBanque.length > 0) {
+        raisons.push(
+          `ingrédient hors banque DINER_OPTIONS au dîner (${ingredientsHorsBanque.map((i) => i.nom).join(", ")})`,
+        );
+      }
     }
 
     if (estDejeuner(type)) {
@@ -132,6 +156,7 @@ export function corrigerRepasFallback(repas: Meal, raisons: string[]): Meal {
     ...(raisons.some((r) => r.includes("dessert")) ? MOTS_DESSERT : []),
     ...(raisons.some((r) => r.includes("œuf")) ? MOTS_OEUF : []),
     ...(raisons.some((r) => r.includes("poisson")) ? MOTS_POISSON : []),
+    ...(raisons.some((r) => r.includes("hors banque")) ? MOTS_HORS_BANQUE_DINER : []),
   ];
 
   const ingredients = repas.ingredients.filter((ing) => !contient(ing.nom.toLowerCase(), motsAExclure));
