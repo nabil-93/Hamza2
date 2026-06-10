@@ -6,6 +6,9 @@ import {
   indexOptionDiner,
   familleProteineDejeuner,
   feculentPrincipalDejeuner,
+  motsInterditsPatient,
+  texteContientInterdit,
+  type MotInterditPatient,
 } from "@/lib/ai/validation";
 import { MOROCCAN_RECIPES } from "@/data/recipes";
 import {
@@ -169,11 +172,33 @@ export function buildRegenerateMealPrompt(
   const repas = jour.repas[mealIndex];
   const autresRepas = jour.repas.filter((_, i) => i !== mealIndex);
 
+  // Allergies/intolérances : les options de banque contenant un aliment
+  // interdit sont RETIRÉES de la liste proposée à l'IA. S'il ne reste aucune
+  // option (ex. gluten au petit-déjeuner), on garde la banque complète avec
+  // consigne d'adaptation (remplacer l'aliment interdit par un équivalent).
+  const motsInterdits = motsInterditsPatient(form);
+  const filtrerBanque = (options: readonly string[]): { liste: string[]; note: string } => {
+    if (motsInterdits.length === 0) return { liste: [...options], note: "" };
+    const compatibles = options.filter((o) => !texteContientInterdit(o, motsInterdits));
+    if (compatibles.length === options.length) return { liste: [...options], note: "" };
+    if (compatibles.length > 0) {
+      return {
+        liste: compatibles,
+        note: "\n⚠️ Les options contenant un aliment INTERDIT pour ce patient (allergie/intolérance) ont déjà été retirées de cette liste : choisis UNIQUEMENT parmi les options ci-dessus.",
+      };
+    }
+    return {
+      liste: [...options],
+      note: "\n⚠️ Ce patient a des aliments INTERDITS (voir contraintes ci-dessus) présents dans toutes les options : ADAPTE l'option choisie en REMPLAÇANT chaque aliment interdit par un équivalent compatible (ex. pain complet → pain sans gluten).",
+    };
+  };
+
   // Règles spécifiques selon le type de repas.
   const type = repas.type.toLowerCase();
   let regleRepas = "";
   if (type.includes("petit")) {
-    regleRepas = `C'est un PETIT-DÉJEUNER : DOIT être EXACTEMENT l'une de ces options de la banque fermée PETIT_DEJ_OPTIONS (+ boisson chaude sans sucre : ${BOISSONS_CHAUDES.join(", ")}) :\n${PETIT_DEJ_OPTIONS.map((o, i) => `${i + 1}. ${o}`).join("\n")}\nAUCUN fruit, AUCUNE compote, AUCUN dessert, AUCUN yaourt ni laitage. Pas de quinoa.`;
+    const banquePD = filtrerBanque(PETIT_DEJ_OPTIONS);
+    regleRepas = `C'est un PETIT-DÉJEUNER : DOIT être EXACTEMENT l'une de ces options de la banque fermée PETIT_DEJ_OPTIONS (+ boisson chaude sans sucre : ${BOISSONS_CHAUDES.join(", ")}) :\n${banquePD.liste.map((o, i) => `${i + 1}. ${o}`).join("\n")}${banquePD.note}\nAUCUN fruit, AUCUNE compote, AUCUN dessert, AUCUN yaourt ni laitage. Pas de quinoa.`;
   } else if (type.includes("déjeuner") || type.includes("dejeuner")) {
     const diner = jour.repas.find((r) => {
       const tt = r.type.toLowerCase();
@@ -187,7 +212,8 @@ export function buildRegenerateMealPrompt(
       return (tt.includes("déjeuner") || tt.includes("dejeuner")) && !tt.includes("petit");
     });
     const plafond = dej ? ` Les calories du dîner doivent rester INFÉRIEURES à celles du déjeuner (${dej.calories} kcal) — le dîner est plus léger que le déjeuner.` : "";
-    regleRepas = `C'est le DÎNER : DOIT être EXACTEMENT l'une de ces 7 options (RIEN d'autre — pas de pain, pas de fromage, pas de yaourt) :\n${DINER_OPTIONS.map((o, i) => `${i + 1}. ${o}`).join("\n")}\nL'œuf au dîner UNIQUEMENT via l'option « Soupe de légumes + 2 œufs durs » ; le poisson au dîner UNIQUEMENT via l'option « Soupe de poisson + légumes sautés ». Pas de fruit.${plafond}`;
+    const banqueDiner = filtrerBanque(DINER_OPTIONS);
+    regleRepas = `C'est le DÎNER : DOIT être EXACTEMENT l'une de ces options (RIEN d'autre — pas de pain, pas de fromage, pas de yaourt) :\n${banqueDiner.liste.map((o, i) => `${i + 1}. ${o}`).join("\n")}${banqueDiner.note}\nL'œuf au dîner UNIQUEMENT via l'option « Soupe de légumes + 2 œufs durs » ; le poisson au dîner UNIQUEMENT via l'option « Soupe de poisson + légumes sautés ». Pas de fruit.${plafond}`;
   }
 
   const couscousNote =
@@ -618,8 +644,13 @@ export function categorieDejeuner(jour: DailyMealPlan): ProteineCategorie {
  * l'appelant (route.ts) de tague le repas généré sans dépendre de l'IA.
  * Le reste (dîner, féculent, petit-déj) est tiré ALÉATOIREMENT à chaque
  * génération → deux semaines/patients ne se ressemblent jamais.
+ *
+ * `motsInterdits` (allergies/intolérances du patient) : toute option de banque
+ * fermée contenant un aliment interdit est EXCLUE des tirages — un patient
+ * allergique aux fruits de mer ne peut jamais se voir IMPOSER l'option
+ * « Légumes au four + fruits de mer ».
  */
-export function dayRole(jourNom: string, historyJours: DailyMealPlan[] = []): {
+export function dayRole(jourNom: string, historyJours: DailyMealPlan[] = [], motsInterdits: MotInterditPatient[] = []): {
   lunch: string;
   lunchCategorie: ProteineCategorie;
   dinner: string;
@@ -641,11 +672,18 @@ export function dayRole(jourNom: string, historyJours: DailyMealPlan[] = []): {
   const dejVeille = texteRepasVeille((t) => (t.includes("déjeuner") || t.includes("dejeuner")) && !t.includes("petit"));
   const dinerVeille = texteRepasVeille((t) => t.includes("dîner") || t.includes("diner"));
 
+  // Une option de banque/protéine est utilisable si elle ne contient AUCUN
+  // aliment interdit pour ce patient (allergie/intolérance).
+  const sansInterdit = (texte: string): boolean => !texteContientInterdit(texte, motsInterdits);
+
   let lunchProteine: string;
   let lunchCategorie: ProteineCategorie;
 
-  if (j === "vendredi") {
-    // Vendredi = couscous fixe (règle absolue, inchangée).
+  // Vendredi = couscous fixe (règle absolue)... SAUF si le couscous/la semoule
+  // est interdit pour ce patient (ex. intolérance au gluten) → jour normal.
+  const couscousAutorise = sansInterdit("couscous (semoule de blé)");
+
+  if (j === "vendredi" && couscousAutorise) {
     lunchProteine = "couscous marocain (vendredi)";
     lunchCategorie = "couscous";
   } else {
@@ -662,8 +700,10 @@ export function dayRole(jourNom: string, historyJours: DailyMealPlan[] = []): {
     const positionAujourdhui = JOURS_NON_VENDREDI.indexOf(j); // 0..5 (vendredi exclu)
     const restantsApresAujourdhui = JOURS_NON_VENDREDI.length - 1 - positionAujourdhui;
 
-    // Pool de protéines autorisées pour le déjeuner, filtré par quotas restants.
-    const pool: { label: string; categorie: ProteineCategorie }[] = [
+    // Pool de protéines autorisées pour le déjeuner, filtré par quotas restants
+    // ET par les aliments interdits du patient (un allergique au poisson ne se
+    // verra jamais imposer le quota poisson).
+    let pool: { label: string; categorie: ProteineCategorie }[] = [
       { label: "volaille (poulet, grillé ou au four)", categorie: "volaille" },
       { label: "volaille (dinde ou escalope de dinde, grillée)", categorie: "volaille" },
       { label: "escalope de poulet grillée", categorie: "volaille" },
@@ -674,6 +714,8 @@ export function dayRole(jourNom: string, historyJours: DailyMealPlan[] = []): {
     if (viandeRougeUtilisee < 2) {
       pool.push({ label: "viande rouge maigre (steak, viande hachée ou brochettes)", categorie: "viande_rouge" });
     }
+    const poolCompatible = pool.filter((p) => sansInterdit(p.label));
+    if (poolCompatible.length > 0) pool = poolCompatible;
 
     // Anti-répétition : la famille de protéine utilisée la VEILLE au déjeuner
     // est exclue du tirage du jour (sauf poisson FORCÉ par le quota, qui prime).
@@ -711,28 +753,40 @@ export function dayRole(jourNom: string, historyJours: DailyMealPlan[] = []): {
   }
 
   // Petit-déjeuner : tiré parmi les 4 options de référence (sans fruit), en
-  // EXCLUANT l'option utilisée la veille (jamais deux jours de suite identiques).
+  // EXCLUANT l'option utilisée la veille (jamais deux jours de suite identiques)
+  // et toute option contenant un aliment interdit pour ce patient.
   const pdVeilleIdx = pdVeille ? indexOptionPetitDej(pdVeille) : -1;
-  const breakfastPool = PETIT_DEJ_OPTIONS.filter((_, i) => i !== pdVeilleIdx);
+  let breakfastPool = PETIT_DEJ_OPTIONS.filter((o, i) => i !== pdVeilleIdx && sansInterdit(o));
+  if (breakfastPool.length === 0) breakfastPool = PETIT_DEJ_OPTIONS.filter((o) => sansInterdit(o));
+  // Cas extrême (ex. gluten : toutes les options mentionnent le pain complet) :
+  // on garde la rotation normale, le prompt + le garde-fou bloquant imposeront
+  // la version adaptée (pain sans gluten).
+  if (breakfastPool.length === 0) breakfastPool = PETIT_DEJ_OPTIONS.filter((_, i) => i !== pdVeilleIdx);
   const breakfast = pick(breakfastPool);
 
   // Dîner : tiré parmi les 7 options FERMÉES du modèle du médecin (œuf
   // uniquement via « 2 œufs durs », poisson uniquement via « soupe de
-  // poisson »), en EXCLUANT l'option utilisée la veille.
+  // poisson »), en EXCLUANT l'option utilisée la veille et toute option
+  // contenant un aliment interdit (allergie fruits de mer → jamais l'option 3).
   const dinerVeilleIdx = dinerVeille ? indexOptionDiner(dinerVeille) : -1;
-  const dinnerPool = DINER_OPTIONS.filter((_, i) => i !== dinerVeilleIdx);
+  let dinnerPool = DINER_OPTIONS.filter((o, i) => i !== dinerVeilleIdx && sansInterdit(o));
+  if (dinnerPool.length === 0) dinnerPool = DINER_OPTIONS.filter((o) => sansInterdit(o));
+  if (dinnerPool.length === 0) dinnerPool = DINER_OPTIONS.filter((_, i) => i !== dinerVeilleIdx);
   const dinner = pick(dinnerPool);
 
   // Féculent du déjeuner : UN SEUL (pain complet 50 g OU 100 g riz/pâtes/
-  // pomme de terre), en EXCLUANT le type de féculent utilisé la veille.
-  // Vendredi : la semoule du couscous EST le féculent du jour.
+  // pomme de terre), en EXCLUANT le type de féculent utilisé la veille et les
+  // féculents interdits (gluten → ni pain ni pâtes, reste riz/pomme de terre).
+  // Vendredi : la semoule du couscous EST le féculent du jour (si autorisée).
   const fecVeille = dejVeille ? feculentPrincipalDejeuner(dejVeille) : null;
+  const feculentsCompatibles = FECULENTS_AUTORISES.filter((s) => sansInterdit(s));
+  const baseFeculents = feculentsCompatibles.length > 0 ? feculentsCompatibles : FECULENTS_AUTORISES;
   const starchPool = fecVeille && fecVeille !== "semoule"
-    ? FECULENTS_AUTORISES.filter((s) => !s.toLowerCase().includes(fecVeille))
-    : FECULENTS_AUTORISES;
-  const starch = j === "vendredi"
+    ? baseFeculents.filter((s) => !s.toLowerCase().includes(fecVeille))
+    : baseFeculents;
+  const starch = j === "vendredi" && couscousAutorise
     ? "AUCUN féculent supplémentaire : la semoule du couscous est le féculent du vendredi (pas de pain, pas de riz en plus)"
-    : pick(starchPool.length > 0 ? starchPool : FECULENTS_AUTORISES);
+    : pick(starchPool.length > 0 ? starchPool : baseFeculents);
 
   const role = {
     breakfast: `${breakfast} (sans fruit)`,

@@ -1,4 +1,4 @@
-import type { DailyMealPlan, Meal, MealIngredient } from "@/types";
+import type { DailyMealPlan, Meal, MealIngredient, PatientForm } from "@/types";
 import { PETIT_DEJ_OPTIONS, DINER_OPTIONS } from "@/data/meal-bank";
 
 /** Mots-clés de fruits (frais, séchés, jus, compotes...). */
@@ -72,6 +72,158 @@ const MOTS_LEGUMES_NON_AUTORISES = [
   "petit pois", "petits pois", "maïs", "potiron", "citrouille", "patate douce",
   "panais", "topinambour", "butternut",
 ];
+
+/* ------------------------------------------------------------------------ */
+/* Allergies & aliments interdits du patient (garde-fou BLOQUANT)            */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Mot interdit pour CE patient (allergie, intolérance, refus), avec une
+ * éventuelle exemption : si la ligne contient ce texte, elle reste autorisée
+ * (ex. mot « pain » issu du gluten, exemption « sans gluten » → « pain sans
+ * gluten » est accepté).
+ */
+export interface MotInterditPatient {
+  mot: string;
+  exemption?: string;
+}
+
+/** Minuscule + sans accents ni ligatures — comparaison tolérante (œuf/oeuf, blé/ble...). */
+function normaliser(texte: string): string {
+  const decompose = texte.toLowerCase().replace(/œ/g, "oe").replace(/æ/g, "ae").normalize("NFD");
+  let resultat = "";
+  for (const ch of decompose) {
+    const code = ch.codePointAt(0) ?? 0;
+    // Ignore les diacritiques combinants (U+0300..U+036F) issus de la décomposition NFD.
+    if (code < 0x0300 || code > 0x036f) resultat += ch;
+  }
+  return resultat;
+}
+
+function echapperRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Vrai si `mot` apparaît comme MOT ENTIER (singulier ou pluriel) dans `texte`.
+ * Évite les faux positifs par inclusion brute : « lait » ne matche pas
+ * « laitue », « blé » ne matche pas « comestible ».
+ */
+function motEntierPresent(texte: string, mot: string): boolean {
+  const t = normaliser(texte);
+  const m = echapperRegExp(normaliser(mot).replace(/s$/, ""));
+  return new RegExp(`(^|[^a-z0-9])${m}s?([^a-z0-9]|$)`).test(t);
+}
+
+/**
+ * Familles d'allergènes connues : si l'une des clés apparaît dans les champs
+ * du patient (alimentsInterdits OU commentaire pathologies), TOUS les mots de
+ * la famille deviennent interdits — « fruits de mer » couvre crevettes,
+ * calamars, moules... ; « gluten »/« cœliaque » couvre blé, pain, semoule,
+ * couscous, orge, belboula... (sauf versions « sans gluten »).
+ */
+const FAMILLES_ALLERGENES: { cles: string[]; mots: string[]; exemption?: string }[] = [
+  {
+    cles: ["fruits de mer", "fruit de mer", "crustacé", "crustace", "coquillage"],
+    mots: [
+      "fruits de mer", "fruit de mer", "crevette", "gambas", "calamar", "calmar",
+      "moule", "huître", "huitre", "poulpe", "seiche", "langoustine", "crabe",
+      "homard", "coquillage", "palourde",
+    ],
+  },
+  {
+    cles: ["gluten", "cœliaque", "coeliaque", "céliaque", "celiaque"],
+    mots: [
+      "gluten", "blé", "pain", "semoule", "couscous", "pâtes", "vermicelle",
+      "orge", "belboula", "boulgour", "avoine", "farine de blé",
+    ],
+    exemption: "sans gluten",
+  },
+  { cles: ["œuf", "oeuf"], mots: ["œuf", "omelette"] },
+  {
+    cles: ["lactose", "produit laitier", "produits laitiers", "laitage", "lait"],
+    mots: ["lait", "yaourt", "yahourt", "fromage", "laitage", "beurre", "crème fraîche", "petit-lait", "lben", "raib"],
+    exemption: "sans lactose",
+  },
+  { cles: ["poisson"], mots: ["poisson", "sardine", "maquereau", "thon", "merlan", "saumon", "cabillaud", "sole", "lotte", "dorade", "anchois"] },
+  { cles: ["arachide", "cacahuète", "cacahuete"], mots: ["arachide", "cacahuète", "cacahuete"] },
+  { cles: ["fruits à coque", "fruits a coque"], mots: ["noix", "amande", "noisette", "pistache", "cajou", "pignon"] },
+];
+
+/** Tokens génériques du texte libre qui ne sont PAS des aliments. */
+const TOKENS_IGNORES = new Set([
+  "allergie", "allergies", "intolerance", "intolerances", "interdit", "interdits",
+  "refus", "aucun", "aucune", "etc", "rien", "neant", "non", "ras", "patient",
+  "totale", "total", "absolu", "absolue", "severe", "alimentaire", "alimentaires",
+]);
+
+/**
+ * Construit la liste des mots interdits pour CE patient à partir de :
+ * - `preferences.alimentsInterdits` (allergies, intolérances, refus — parsé
+ *   littéralement, token par token) ;
+ * - `commentairePathologies` (texte médical libre — seules les FAMILLES
+ *   d'allergènes connues y sont détectées, ex. « maladie cœliaque »).
+ */
+export function motsInterditsPatient(form: PatientForm): MotInterditPatient[] {
+  const interdits = form.preferences?.alimentsInterdits ?? "";
+  const commentaire = form.commentairePathologies ?? "";
+  const brut = `${interdits} ; ${commentaire}`;
+  if (!brut.replace(/;/g, "").trim()) return [];
+
+  const resultat = new Map<string, MotInterditPatient>();
+  const ajouter = (mot: string, exemption?: string) => {
+    const cle = normaliser(mot).trim();
+    if (cle.length >= 3 && !resultat.has(cle)) resultat.set(cle, { mot: mot.trim(), exemption });
+  };
+
+  for (const famille of FAMILLES_ALLERGENES) {
+    if (famille.cles.some((c) => motEntierPresent(brut, c))) {
+      for (const m of famille.mots) ajouter(m, famille.exemption);
+    }
+  }
+
+  for (const token of interdits.split(/[,;()/+\n]|\bet\b|\bou\b/)) {
+    const mot = token
+      .trim()
+      .replace(/^(pas\s+de|pas\s+d'|sans|aucun|aucune|allergies?\s+aux?|allergique\s+aux?|intol[ée]rances?\s+aux?)\s+/i, "")
+      .replace(/^(le|la|les|l'|du|de\s+la|des|de)\s+/i, "")
+      .trim();
+    if (mot.length >= 3 && !TOKENS_IGNORES.has(normaliser(mot))) ajouter(mot);
+  }
+
+  return [...resultat.values()];
+}
+
+/**
+ * Vrai si un texte libre (option de banque, label de protéine, nom de
+ * féculent...) contient un aliment interdit — sert à FILTRER les banques
+ * fermées dans dayRole() et les prompts.
+ */
+export function texteContientInterdit(texte: string, motsInterdits: MotInterditPatient[]): boolean {
+  return motsInterdits.some(
+    ({ mot, exemption }) =>
+      motEntierPresent(texte, mot) && !(exemption && normaliser(texte).includes(normaliser(exemption))),
+  );
+}
+
+/**
+ * Lignes d'un repas (nom du plat + chaque ingrédient) contenant un aliment
+ * interdit pour ce patient. Liste vide = repas conforme.
+ */
+export function lignesInterditesRepas(repas: Meal, motsInterdits: MotInterditPatient[]): { ligne: string; mot: string }[] {
+  if (motsInterdits.length === 0) return [];
+  const violations: { ligne: string; mot: string }[] = [];
+  const lignes = [repas.nom, ...(repas.ingredients ?? []).map((i) => `${i.nom} ${i.preparation ?? ""}`)];
+  for (const ligne of lignes) {
+    for (const { mot, exemption } of motsInterdits) {
+      if (motEntierPresent(ligne, mot) && !(exemption && normaliser(ligne).includes(normaliser(exemption)))) {
+        violations.push({ ligne: ligne.trim(), mot });
+        break;
+      }
+    }
+  }
+  return violations;
+}
 
 /**
  * Neutralise les faux positifs « fruit » : « fruits de mer » et « pomme de
@@ -228,6 +380,9 @@ export const POISSON_OBJECTIF_HEBDO = 2;
  *   couscous UNIQUEMENT le vendredi.
  * @param jourVeille Jour généré la VEILLE (null si premier jour) — sert à
  *   refuser tout repas identique à celui de la veille.
+ * @param motsInterdits Aliments interdits pour CE patient (allergies,
+ *   intolérances, refus — cf. `motsInterditsPatient`) : toute présence dans
+ *   n'importe quel repas est une anomalie BLOQUANTE.
  */
 export function detecterAnomaliesJour(
   jour: DailyMealPlan,
@@ -235,6 +390,7 @@ export function detecterAnomaliesJour(
   dernierJourSemaine = false,
   jourNom = "",
   jourVeille: DailyMealPlan | null = null,
+  motsInterdits: MotInterditPatient[] = [],
 ): AnomalieRepas[] {
   const anomalies: AnomalieRepas[] = [];
   const estVendredi = jourNom.toLowerCase() === "vendredi";
@@ -251,6 +407,16 @@ export function detecterAnomaliesJour(
     const couscousIci = contient(texte, MOTS_COUSCOUS);
 
     // -- Règles valables pour TOUS les repas --------------------------------
+    // GARDE-FOU ALLERGIES : aucun aliment interdit pour ce patient, dans
+    // AUCUN repas (nom du plat ou ingrédient) — anomalie BLOQUANTE.
+    const lignesInterdites = lignesInterditesRepas(repas, motsInterdits);
+    if (lignesInterdites.length > 0) {
+      raisons.push(
+        `aliment INTERDIT pour ce patient (allergie/intolérance) : ${lignesInterdites
+          .map((v) => `« ${v.ligne} » (${v.mot})`)
+          .join(", ")}`,
+      );
+    }
     if (contient(texte, MOTS_BOULGOUR)) {
       raisons.push("boulgour (interdit, ne doit JAMAIS être généré)");
     }
@@ -433,19 +599,54 @@ const DINER_TEMPLATES: MealIngredient[][] = [
 
 /**
  * Reconstruit un repas depuis UNE AUTRE option de la banque fermée (différente
- * de l'option actuelle) — correction déterministe « identique à la veille ».
+ * de l'option actuelle) — correction déterministe « identique à la veille »
+ * ou « aliment interdit ». Les options contenant un aliment interdit pour le
+ * patient sont écartées ; s'il n'en reste aucune (ex. gluten au petit-déjeuner,
+ * toutes les options contiennent du pain), les lignes fautives sont retirées
+ * du template et le pain est remplacé par sa version sans gluten.
  */
-export function reconstruireDepuisBanque(repas: Meal, banque: "petit_dejeuner" | "diner"): Meal {
+export function reconstruireDepuisBanque(
+  repas: Meal,
+  banque: "petit_dejeuner" | "diner",
+  motsInterdits: MotInterditPatient[] = [],
+): Meal {
   const options = banque === "diner" ? DINER_OPTIONS : PETIT_DEJ_OPTIONS;
   const templates = banque === "diner" ? DINER_TEMPLATES : PETIT_DEJ_TEMPLATES;
   const idxActuel = banque === "diner" ? indexOptionDiner(texteRepas(repas)) : indexOptionPetitDej(texteRepas(repas));
-  const candidats = options.map((_, i) => i).filter((i) => i !== idxActuel);
+  let candidats = options.map((_, i) => i).filter((i) => i !== idxActuel);
+  if (motsInterdits.length > 0) {
+    const compatibles = candidats.filter((i) => {
+      const texteOption = `${options[i]} ${templates[i].map((t) => t.nom).join(" ")}`;
+      return !texteContientInterdit(texteOption, motsInterdits);
+    });
+    if (compatibles.length > 0) candidats = compatibles;
+  }
   const idx = candidats[Math.floor(Math.random() * candidats.length)];
-  return {
-    ...repas,
-    nom: options[idx],
-    ingredients: templates[idx].map((ing) => ({ ...ing })),
-  };
+
+  let ingredients = templates[idx].map((ing) => ({ ...ing }));
+  let nom = options[idx];
+  if (motsInterdits.length > 0) {
+    // Dernier filet : retire toute ligne interdite résiduelle du template.
+    let painSansGluten = false;
+    ingredients = ingredients.filter((ing) => {
+      const ligne = `${ing.nom} ${ing.preparation ?? ""}`;
+      const fautif = motsInterdits.find(
+        (m) => texteContientInterdit(ligne, [m]),
+      );
+      if (!fautif) return true;
+      if (fautif.exemption === "sans gluten" && normaliser(ing.nom).includes("pain")) painSansGluten = true;
+      return false;
+    });
+    if (painSansGluten) ingredients.push({ nom: "Pain sans gluten", quantite: "50 g", preparation: "—" });
+    const parts = nom
+      .split("+")
+      .map((p) => p.trim())
+      .filter((p) => !texteContientInterdit(p, motsInterdits));
+    if (painSansGluten) parts.push("50 g de pain sans gluten");
+    nom = parts.join(" + ") || nom;
+  }
+
+  return { ...repas, nom, ingredients };
 }
 
 /** Banque des féculents du déjeuner pour la permutation déterministe. */
@@ -486,13 +687,42 @@ export function permuterFeculentDejeuner(repas: Meal): Meal {
  * les remplace par un complément neutre conforme. Pour un repas « identique à
  * la veille », rebascule sur une AUTRE option de la banque fermée.
  */
-export function corrigerRepasFallback(repas: Meal, raisons: string[]): Meal {
+export function corrigerRepasFallback(repas: Meal, raisons: string[], motsInterdits: MotInterditPatient[] = []): Meal {
   const type = repas.type.toLowerCase();
+
+  // Aliment INTERDIT (allergie/intolérance) → reconstruction sur une option de
+  // la banque COMPATIBLE (petit-déj/dîner) ou retrait + complément (déjeuner).
+  if (motsInterdits.length > 0 && raisons.some((r) => r.includes("aliment INTERDIT"))) {
+    if (estPetitDejeuner(type)) return reconstruireDepuisBanque(repas, "petit_dejeuner", motsInterdits);
+    if (estDiner(type)) return reconstruireDepuisBanque(repas, "diner", motsInterdits);
+    if (estDejeuner(type)) {
+      let ingredients = repas.ingredients.filter(
+        (ing) => !texteContientInterdit(`${ing.nom} ${ing.preparation ?? ""}`, motsInterdits),
+      );
+      // Si la protéine ou le féculent a sauté avec le retrait, on complète
+      // avec un équivalent lui-même compatible avec les interdits.
+      const proteinesSures = ["Blanc de poulet", "Escalope de dinde", "Viande hachée sans graisse"]
+        .filter((p) => !texteContientInterdit(p, motsInterdits));
+      if (!ingredients.some((ing) => contient(ing.nom.toLowerCase(), MOTS_PROTEINE_DEJEUNER)) && proteinesSures.length > 0) {
+        ingredients.push({ nom: proteinesSures[0], quantite: "150 g", preparation: "grillé" });
+      }
+      const feculentsSurs = FECULENTS_PERMUTATION.filter((f) => !texteContientInterdit(f.nom, motsInterdits));
+      if (!ingredients.some((ing) => contient(ing.nom.toLowerCase(), MOTS_FECULENT)) && feculentsSurs.length > 0) {
+        ingredients.push({ nom: feculentsSurs[0].nom, quantite: feculentsSurs[0].quantite, preparation: "cuit" });
+      }
+      const nom = repas.nom
+        .split(/[+,]/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0 && !texteContientInterdit(p, motsInterdits))
+        .join(" + ");
+      return { ...repas, nom: nom || "Déjeuner adapté (allergie respectée)", ingredients };
+    }
+  }
 
   // Repas identique à la veille → choisir automatiquement une autre option.
   if (raisons.some((r) => r.includes("identique à la veille"))) {
-    if (estPetitDejeuner(type)) return reconstruireDepuisBanque(repas, "petit_dejeuner");
-    if (estDiner(type)) return reconstruireDepuisBanque(repas, "diner");
+    if (estPetitDejeuner(type)) return reconstruireDepuisBanque(repas, "petit_dejeuner", motsInterdits);
+    if (estDiner(type)) return reconstruireDepuisBanque(repas, "diner", motsInterdits);
     if (estDejeuner(type)) return permuterFeculentDejeuner(repas);
   }
 
