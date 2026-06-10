@@ -12,8 +12,9 @@ const PROTEINE_POISSON_IMPOSEE = "poisson (sardines, maquereau, thon, merlan, sa
 
 /**
  * Vérifie le jour généré et corrige automatiquement toute violation BLOQUANTE
- * (fruit/dessert au dîner, œuf au déjeuner, œuf au dîner, poisson hors
- * déjeuner, poisson au-delà ou en-deçà du quota hebdomadaire EXACT de 2) :
+ * (fruit/dessert au dîner, œuf au déjeuner, œuf au dîner hors option
+ * « 2 œufs durs », poisson au dîner hors option « soupe de poisson »,
+ * poisson au-delà ou en-deçà du quota hebdomadaire EXACT de 2 déjeuners) :
  * régénération ciblée du repas via l'IA, puis correction déterministe en
  * dernier recours.
  *
@@ -29,9 +30,23 @@ async function corrigerAnomaliesBloquantes(
   poissonDejaUtilise: number,
   dernierJourSemaine: boolean,
   jourNom: string,
+  jourVeille: DailyMealPlan | null,
 ): Promise<DailyMealPlan> {
-  let anomalies = detecterAnomaliesJour(plan, poissonDejaUtilise, dernierJourSemaine, jourNom);
+  let anomalies = detecterAnomaliesJour(plan, poissonDejaUtilise, dernierJourSemaine, jourNom, jourVeille);
   if (anomalies.length === 0) return plan;
+
+  // Repas de la veille du même type (petit-déj/déjeuner/dîner) → transmis au
+  // prompt de régénération pour interdire de reproduire la même option.
+  const memeTypeVeille = (type: string): string | undefined => {
+    const t = type.toLowerCase();
+    const r = jourVeille?.repas.find((x) => {
+      const tx = x.type.toLowerCase();
+      if (t.includes("petit")) return tx.includes("petit");
+      if (t.includes("dîner") || t.includes("diner")) return tx.includes("dîner") || tx.includes("diner");
+      return (tx.includes("déjeuner") || tx.includes("dejeuner")) && !tx.includes("petit");
+    });
+    return r?.nom;
+  };
 
   for (const { mealIndex, raisons } of anomalies) {
     const poissonManquant = raisons.some((r) => r.includes("poisson manquant"));
@@ -41,7 +56,14 @@ async function corrigerAnomaliesBloquantes(
     for (let tentative = 1; tentative <= MAX_TENTATIVES_REGENERATION; tentative++) {
       try {
         const candidat = await generateJson<Meal>(
-          buildRegenerateMealPrompt(plan, mealIndex, locale, form, poissonManquant ? PROTEINE_POISSON_IMPOSEE : undefined),
+          buildRegenerateMealPrompt(
+            plan,
+            mealIndex,
+            locale,
+            form,
+            poissonManquant ? PROTEINE_POISSON_IMPOSEE : undefined,
+            memeTypeVeille(plan.repas[mealIndex].type),
+          ),
           REGENERATE_MEAL_SYSTEM_PROMPT,
           0.85,
           locale,
@@ -50,7 +72,7 @@ async function corrigerAnomaliesBloquantes(
           ...plan,
           repas: plan.repas.map((r, i) => (i === mealIndex ? candidat : r)),
         };
-        const stillInvalid = detecterAnomaliesJour(planTest, poissonDejaUtilise, dernierJourSemaine, jourNom).some((a) => a.mealIndex === mealIndex);
+        const stillInvalid = detecterAnomaliesJour(planTest, poissonDejaUtilise, dernierJourSemaine, jourNom, jourVeille).some((a) => a.mealIndex === mealIndex);
         if (!stillInvalid) {
           repasCorrige = candidat;
           break;
@@ -83,7 +105,7 @@ async function corrigerAnomaliesBloquantes(
   }
 
   // Re-vérification finale (les régénérations successives ne se recoupent pas en pratique).
-  anomalies = detecterAnomaliesJour(plan, poissonDejaUtilise, dernierJourSemaine, jourNom);
+  anomalies = detecterAnomaliesJour(plan, poissonDejaUtilise, dernierJourSemaine, jourNom, jourVeille);
   if (anomalies.length > 0) {
     console.warn(`[QC] Anomalies résiduelles après correction sur "${plan.jour}" :`, anomalies);
   }
@@ -136,13 +158,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Garde-fou BLOQUANT : fruit/dessert au dîner, œuf au déjeuner, œuf au dîner,
-    // poisson hors déjeuner, poisson ≠ exactement 2/semaine (jamais 0, 1 ou 3+).
+    // Garde-fou BLOQUANT : fruit/dessert au dîner, œuf au déjeuner, œuf au dîner
+    // hors option « 2 œufs durs », poisson au dîner hors option « soupe de
+    // poisson », poisson ≠ exactement 2 déjeuners/semaine (jamais 0, 1 ou 3+).
     // Régénération ciblée du repas fautif (avec fallback déterministe) avant
     // de renvoyer le programme à l'utilisateur.
     const poissonDejaUtilise = compterPoissonReel(historyJours ?? []);
     const dernierJourSemaine = jourNom.toLowerCase() === "dimanche";
-    await corrigerAnomaliesBloquantes(plan, locale, form, poissonDejaUtilise, dernierJourSemaine, jourNom);
+    // Jour de la VEILLE (dernier jour déjà généré) — anti-répétition stricte :
+    // aucun repas ne peut être identique à celui de la veille.
+    const jourVeille = (historyJours ?? []).length > 0 ? historyJours![historyJours!.length - 1] : null;
+    await corrigerAnomaliesBloquantes(plan, locale, form, poissonDejaUtilise, dernierJourSemaine, jourNom, jourVeille);
 
     // Le modèle ne respecte pas fiablement les pourcentages de macros : on les
     // recalcule de façon déterministe à partir des calories réelles du jour,

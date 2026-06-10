@@ -33,18 +33,19 @@ export const DEJEUNER_PROTEINES_AUTORISEES = [
 ];
 
 /**
- * DÎNER — banque d'options (à piocher en VARIANT, protéine toujours présente).
- * JAMAIS d'œuf ni de poisson au dîner (œuf = petit-déjeuner uniquement,
- * poisson = déjeuner uniquement).
+ * DÎNER — banque FERMÉE des 7 options du modèle du médecin (à piocher en
+ * VARIANT). L'œuf au dîner n'existe QUE via l'option « 2 œufs durs », et le
+ * poisson au dîner QUE via l'option « Soupe de poisson » (hors quota des
+ * 2 déjeuners poisson/semaine).
  */
 export const DINER_OPTIONS = [
   "Soupe de légumes + 150 g de poulet",
-  "Soupe de légumes + 150 g de viande hachée maigre",
-  "Légumes au four + 150 g de poulet",
+  "Soupe de légumes + 150 g de viande hachée sans graisse",
   "Légumes au four + 150 g de fruits de mer",
+  "Légumes au four + 150 g de poulet",
+  "Soupe de poisson + légumes sautés",
+  "Soupe de légumes + 2 œufs durs",
   "Légumes sautés + 150 g de poulet",
-  "Légumes sautés + 150 g de viande maigre",
-  "Soupe de légumes + 150 g de dinde",
 ];
 
 /** Légumes autorisés (consommés cuits ou crus). */
@@ -56,9 +57,9 @@ export const LEGUMES_AUTORISES = [
 ];
 
 /**
- * Féculent complémentaire du déjeuner (2e portion, EN PLUS du pain complet 50 g
- * de base) : soit un 2e morceau de pain complet 50 g, soit 100 g de riz/pâtes/
- * pomme de terre. JAMAIS de boulgour (retiré de la banque).
+ * Féculent du déjeuner — UN SEUL au choix : un petit morceau de pain complet
+ * (50 g) OU 100 g de riz/pâtes/pomme de terre. JAMAIS de boulgour (retiré de
+ * la banque).
  */
 export const FECULENTS_AUTORISES = [
   "pain complet (50 g)", "riz complet (100 g)", "pâtes complètes (100 g)", "pomme de terre (100 g)",
