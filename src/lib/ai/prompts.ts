@@ -286,7 +286,7 @@ Le déjeuner DOIT contenir TOUS ces éléments, CHAQUE jour (aucun omis) :
 4. UN DEUXIÈME féculent, EN PLUS du pain complet du point 3, au choix : soit un 2e petit morceau de pain complet (50 g), soit 100 g de riz complet, pâtes complètes ou pomme de terre. JAMAIS de boulgour. Liste-le explicitement avec sa quantité (ex. « Riz complet : 100 g » ou « Pain complet : 50 g »).
 5. Produit laitier (yaourt nature ou fromage).
 6. 1 fruit en dessert (cf. règle ci-dessous).
-Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité.
+7. Huile d'olive : UNE SEULE ligne « Huile d'olive » avec UNE SEULE quantité totale (ex. « Huile d'olive : 10 g »), qui couvre à la fois la cuisson ET l'assaisonnement. INTERDIT d'ajouter une 2e ligne d'huile (huile de colza, ou une 2e ligne « Huile d'olive » séparée). Sel limité.
 
 == STRUCTURE OBLIGATOIRE DU DÎNER — BANQUE FERMÉE (DINER_OPTIONS) ==
 Le dîner DOIT être EXACTEMENT L'UNE des 7 OPTIONS SUIVANTES (choisis-en une, varie d'un jour à l'autre, AUCUNE autre composition n'est autorisée) :
@@ -528,7 +528,7 @@ CONTRAINTES ISSUES DU RÉFÉRENTIEL EMC (à respecter impérativement) :
 - ⚠️ ŒUF : UNIQUEMENT au PETIT-DÉJEUNER. JAMAIS d'œuf au déjeuner ni au dîner, sous aucune forme (ni dur, ni omelette, ni au plat). La protéine du dîner est exclusivement celle de l'option DINER_OPTIONS choisie (volaille, viande, dinde ou fruits de mer — jamais œuf, jamais poisson, jamais fromage).
 - OBLIGATOIRE pour CHAQUE déjeuner : lister explicitement dans les ingrédients le PAIN COMPLET de base (ex. « Pain complet : 50 g »), le DEUXIÈME féculent (ex. « Riz complet : 100 g » ou « Pain complet : 50 g ») ET une SOURCE DE PROTÉINE 150 g avec quantité. Ne les oublie jamais.
 - Au moins 5 portions de fruits/légumes sur la journée, féculents complets, 3 produits laitiers, poisson présent dans la semaine.
-- Huile d'olive/colza pour les matières grasses, sel limité, eau à volonté, sucres simples limités.${form.objectif === "perte_poids" ? "\n- Profil en perte de poids : régime hypocalorique MODÉRÉ (~700 kcal/repas femme, ~830 kcal/repas homme), jamais agressif." : ""}${duration > 1 ? `\n- VARIÉTÉ OBLIGATOIRE : ne répète pas les mêmes plats d'un jour à l'autre ; alterne poisson, légumineuses, volaille, œufs et varie les légumes et féculents sur les ${duration} jours.` : ""}
+- Huile d'olive : UNE SEULE ligne « Huile d'olive » par repas avec UNE SEULE quantité totale (cuisson + assaisonnement réunis). JAMAIS deux lignes d'huile (pas de 2e ligne huile de colza). Sel limité, eau à volonté, sucres simples limités.${form.objectif === "perte_poids" ? "\n- Profil en perte de poids : régime hypocalorique MODÉRÉ (~700 kcal/repas femme, ~830 kcal/repas homme), jamais agressif." : ""}${duration > 1 ? `\n- VARIÉTÉ OBLIGATOIRE : ne répète pas les mêmes plats d'un jour à l'autre ; alterne poisson, légumineuses, volaille, œufs et varie les légumes et féculents sur les ${duration} jours.` : ""}
 
 BANQUE DE RÉFÉRENCE (inspire-toi de ces modèles, MAIS VARIE — deux patients ne doivent jamais avoir le même programme) :
 • Petit-déjeuner (SANS fruit) : ${PETIT_DEJ_OPTIONS.slice(0, 4).join(" | ")}.

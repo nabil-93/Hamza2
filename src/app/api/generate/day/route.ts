@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateJson } from "@/lib/ai/openai";
 import { buildSingleDayPrompt, buildRegenerateMealPrompt, REGENERATE_MEAL_SYSTEM_PROMPT, dayRole } from "@/lib/ai/prompts";
-import { detecterAnomaliesJour, corrigerRepasFallback, corrigerRepasImposerPoisson, compterPoissonReel } from "@/lib/ai/validation";
+import { detecterAnomaliesJour, corrigerRepasFallback, corrigerRepasImposerPoisson, compterPoissonReel, fusionnerHuiles } from "@/lib/ai/validation";
 import { idealMacros } from "@/lib/utils";
 import type { PatientForm, CalculationResult, Locale, DailyMealPlan, Meal } from "@/types";
 
@@ -120,6 +120,10 @@ export async function POST(req: NextRequest) {
       0.85,
       locale,
     );
+
+    // Fusionne les lignes d'huile dupliquées (huile d'olive cuisson + huile de
+    // colza assaisonnement, etc.) en une seule ligne « Huile d'olive ».
+    plan.repas = plan.repas.map((r) => fusionnerHuiles(r));
 
     // Catégorie de protéine du déjeuner = celle décidée par dayRole() (source de
     // vérité serveur, indépendante de l'IA) — sert aux quotas hebdomadaires.

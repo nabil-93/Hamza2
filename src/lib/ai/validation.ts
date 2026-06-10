@@ -237,3 +237,33 @@ export function corrigerRepasImposerPoisson(repas: Meal): Meal {
     ingredients,
   };
 }
+
+/**
+ * Fusionne toutes les lignes d'huile (huile d'olive, huile de colza...) d'un
+ * repas en UNE SEULE ligne « Huile d'olive », en additionnant les quantités
+ * exprimées en grammes (ml traités comme g). Si les quantités ne sont pas
+ * parsables, conserve la première trouvée.
+ */
+export function fusionnerHuiles(repas: Meal): Meal {
+  const huiles = repas.ingredients.filter((ing) => ing.nom.toLowerCase().includes("huile"));
+  if (huiles.length <= 1) return repas;
+
+  let total = 0;
+  let toutesParsables = true;
+  for (const huile of huiles) {
+    const match = huile.quantite.match(/(\d+(?:[.,]\d+)?)/);
+    if (match) {
+      total += parseFloat(match[1].replace(",", "."));
+    } else {
+      toutesParsables = false;
+    }
+  }
+
+  const quantiteFusionnee = toutesParsables ? `${Math.round(total)} g` : huiles[0].quantite;
+  const autresIngredients = repas.ingredients.filter((ing) => !ing.nom.toLowerCase().includes("huile"));
+
+  return {
+    ...repas,
+    ingredients: [...autresIngredients, { nom: "Huile d'olive", quantite: quantiteFusionnee, preparation: huiles[0].preparation }],
+  };
+}
