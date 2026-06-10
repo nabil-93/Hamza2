@@ -34,6 +34,9 @@ const MOTS_POISSON = [
   "poisson", "sardine", "maquereau", "thon", "merlan", "saumon", "cabillaud", "sole", "lotte", "dorade",
 ];
 
+/** Mots-clés COUSCOUS — réservé EXCLUSIVEMENT au déjeuner du vendredi. */
+const MOTS_COUSCOUS = ["couscous"];
+
 function texteRepas(repas: Meal): string {
   const ingr = (repas.ingredients ?? []).map((i) => i.nom).join(" ");
   return `${repas.nom} ${ingr}`.toLowerCase();
@@ -86,6 +89,7 @@ export const POISSON_OBJECTIF_HEBDO = 2;
  * - dernier jour de la semaine : quota poisson PAS ENCORE ATTEINT (jamais 0, jamais 1)
  * - dîner contenant un ingrédient hors banque fermée DINER_OPTIONS (pain,
  *   fromage, yaourt, féculent, huile listée séparément...)
+ * - couscous présent un jour autre que le déjeuner du vendredi
  * (le petit-déjeuner sans fruit/dessert et le déjeuner avec exactement 1 fruit
  * sont déjà couverts par le prompt et ne sont pas re-vérifiés ici.)
  *
@@ -93,22 +97,28 @@ export const POISSON_OBJECTIF_HEBDO = 2;
  *   poisson a déjà été détecté au déjeuner (cf. `compterPoissonReel`).
  * @param dernierJourSemaine `true` si `jour` est le dernier jour non-vendredi
  *   de la semaine (dimanche) — déclenche la vérification "quota atteint".
+ * @param jourNom Nom du jour (ex. "Lundi", "Vendredi") — sert à autoriser le
+ *   couscous UNIQUEMENT le vendredi.
  */
 export function detecterAnomaliesJour(
   jour: DailyMealPlan,
   poissonDejaUtilise = 0,
   dernierJourSemaine = false,
+  jourNom = "",
 ): AnomalieRepas[] {
   const anomalies: AnomalieRepas[] = [];
+  const estVendredi = jourNom.toLowerCase() === "vendredi";
 
   jour.repas.forEach((repas, mealIndex) => {
     const type = repas.type.toLowerCase();
     const texte = texteRepas(repas);
     const raisons: string[] = [];
     const poissonIci = contient(texte, MOTS_POISSON);
+    const couscousIci = contient(texte, MOTS_COUSCOUS);
 
     if (estPetitDejeuner(type)) {
       if (poissonIci) raisons.push("poisson au petit-déjeuner");
+      if (couscousIci) raisons.push("couscous au petit-déjeuner (réservé au déjeuner du vendredi)");
     }
 
     if (estDiner(type)) {
@@ -116,6 +126,7 @@ export function detecterAnomaliesJour(
       if (contient(texte, MOTS_DESSERT)) raisons.push("dessert au dîner");
       if (contient(texte, MOTS_OEUF)) raisons.push("œuf au dîner");
       if (poissonIci) raisons.push("poisson au dîner");
+      if (couscousIci) raisons.push("couscous au dîner (réservé au déjeuner du vendredi)");
       const ingredientsHorsBanque = (repas.ingredients ?? []).filter((ing) =>
         contient(ing.nom.toLowerCase(), MOTS_HORS_BANQUE_DINER),
       );
@@ -128,6 +139,9 @@ export function detecterAnomaliesJour(
 
     if (estDejeuner(type)) {
       if (contient(texte, MOTS_OEUF)) raisons.push("œuf au déjeuner");
+      if (couscousIci && !estVendredi) {
+        raisons.push("couscous au déjeuner un jour autre que vendredi (réservé au vendredi)");
+      }
       if (poissonIci && poissonDejaUtilise >= POISSON_OBJECTIF_HEBDO) {
         raisons.push(`poisson au déjeuner au-delà du quota hebdomadaire (${POISSON_OBJECTIF_HEBDO} exactement)`);
       }
@@ -157,6 +171,7 @@ export function corrigerRepasFallback(repas: Meal, raisons: string[]): Meal {
     ...(raisons.some((r) => r.includes("œuf")) ? MOTS_OEUF : []),
     ...(raisons.some((r) => r.includes("poisson")) ? MOTS_POISSON : []),
     ...(raisons.some((r) => r.includes("hors banque")) ? MOTS_HORS_BANQUE_DINER : []),
+    ...(raisons.some((r) => r.includes("couscous")) ? MOTS_COUSCOUS : []),
   ];
 
   const ingredients = repas.ingredients.filter((ing) => !contient(ing.nom.toLowerCase(), motsAExclure));
@@ -168,11 +183,23 @@ export function corrigerRepasFallback(repas: Meal, raisons: string[]): Meal {
     ingredients.push({ nom: "Blanc de poulet", quantite: "120 g", preparation: "grillé" });
   }
 
+  // Si le couscous retiré faisait office de féculent au déjeuner, on le
+  // remplace par le 2e féculent autorisé (riz complet 100 g).
+  const couscousRetire = raisons.some((r) => r.includes("couscous"));
+  if (couscousRetire && estDejeuner(type)) {
+    ingredients.push({ nom: "Riz complet", quantite: "100 g", preparation: "cuit" });
+  }
+
+  const ajouts = [proteineRetiree ? "Blanc de poulet" : null, couscousRetire ? "Riz complet" : null].filter(
+    (x): x is string => x !== null,
+  );
+
   const nom = repas.nom
     .split(/[+,]/)
     .map((part) => part.trim())
     .filter((part) => !contient(part.toLowerCase(), motsAExclure))
-    .join(proteineRetiree ? " + Blanc de poulet" : "");
+    .concat(ajouts)
+    .join(" + ");
 
   return {
     ...repas,

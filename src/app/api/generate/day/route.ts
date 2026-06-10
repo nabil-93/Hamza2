@@ -28,8 +28,9 @@ async function corrigerAnomaliesBloquantes(
   form: PatientForm,
   poissonDejaUtilise: number,
   dernierJourSemaine: boolean,
+  jourNom: string,
 ): Promise<DailyMealPlan> {
-  let anomalies = detecterAnomaliesJour(plan, poissonDejaUtilise, dernierJourSemaine);
+  let anomalies = detecterAnomaliesJour(plan, poissonDejaUtilise, dernierJourSemaine, jourNom);
   if (anomalies.length === 0) return plan;
 
   for (const { mealIndex, raisons } of anomalies) {
@@ -49,7 +50,7 @@ async function corrigerAnomaliesBloquantes(
           ...plan,
           repas: plan.repas.map((r, i) => (i === mealIndex ? candidat : r)),
         };
-        const stillInvalid = detecterAnomaliesJour(planTest, poissonDejaUtilise, dernierJourSemaine).some((a) => a.mealIndex === mealIndex);
+        const stillInvalid = detecterAnomaliesJour(planTest, poissonDejaUtilise, dernierJourSemaine, jourNom).some((a) => a.mealIndex === mealIndex);
         if (!stillInvalid) {
           repasCorrige = candidat;
           break;
@@ -82,7 +83,7 @@ async function corrigerAnomaliesBloquantes(
   }
 
   // Re-vérification finale (les régénérations successives ne se recoupent pas en pratique).
-  anomalies = detecterAnomaliesJour(plan, poissonDejaUtilise, dernierJourSemaine);
+  anomalies = detecterAnomaliesJour(plan, poissonDejaUtilise, dernierJourSemaine, jourNom);
   if (anomalies.length > 0) {
     console.warn(`[QC] Anomalies résiduelles après correction sur "${plan.jour}" :`, anomalies);
   }
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
     // de renvoyer le programme à l'utilisateur.
     const poissonDejaUtilise = compterPoissonReel(historyJours ?? []);
     const dernierJourSemaine = jourNom.toLowerCase() === "dimanche";
-    await corrigerAnomaliesBloquantes(plan, locale, form, poissonDejaUtilise, dernierJourSemaine);
+    await corrigerAnomaliesBloquantes(plan, locale, form, poissonDejaUtilise, dernierJourSemaine, jourNom);
 
     // Le modèle ne respecte pas fiablement les pourcentages de macros : on les
     // recalcule de façon déterministe à partir des calories réelles du jour,

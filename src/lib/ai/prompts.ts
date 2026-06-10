@@ -172,7 +172,7 @@ export function buildRegenerateMealPrompt(
       return tt.includes("dîner") || tt.includes("diner");
     });
     const plancher = diner ? ` Les calories du déjeuner doivent rester SUPÉRIEURES à celles du dîner (${diner.calories} kcal) — le déjeuner est le repas le plus copieux.` : "";
-    regleRepas = `C'est le DÉJEUNER (repas principal) : crudités + protéine 120-150 g (viande/poisson/volaille/œufs) + petit féculent complet + pain complet + 1 fruit en dessert. Le déjeuner est le SEUL repas avec un fruit.${plancher}`;
+    regleRepas = `C'est le DÉJEUNER (repas principal) : assiette de légumes cuits ou crus + 150 g de protéine (viande/poisson/volaille) + Pain complet 50 g + UN DEUXIÈME féculent (2e pain complet 50 g OU 100 g de riz complet/pâtes complètes/pomme de terre — JAMAIS de boulgour, JAMAIS de couscous sauf si vendredi) + produit laitier (yaourt/fromage) + 1 fruit en dessert. Le déjeuner est le SEUL repas avec un fruit.${plancher}`;
   } else if (type.includes("dîner") || type.includes("diner")) {
     const dej = jour.repas.find((r) => {
       const tt = r.type.toLowerCase();
