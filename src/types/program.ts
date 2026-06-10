@@ -22,6 +22,9 @@ export interface Recipe {
   macros: Macros;
 }
 
+/** Catégorie de la protéine principale du déjeuner (utilisée pour les quotas hebdomadaires). */
+export type ProteineCategorie = "poisson" | "volaille" | "viande_rouge" | "couscous" | "oeuf" | "autre";
+
 export interface Meal {
   /** ex: "Petit-déjeuner", "Ftour", "Shour" */
   type: string;
@@ -29,6 +32,8 @@ export interface Meal {
   ingredients: MealIngredient[];
   calories: number;
   recette?: Recipe;
+  /** Déduit côté serveur depuis dayRole() pour le déjeuner — jamais généré par l'IA. */
+  categorieProteine?: ProteineCategorie;
 }
 
 export interface DailyMealPlan {

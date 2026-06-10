@@ -1,4 +1,5 @@
-import type { PatientForm, CalculationResult, Locale, GeneratedProgram, DailyMealPlan } from "@/types";
+import type { PatientForm, CalculationResult, Locale, GeneratedProgram, DailyMealPlan, ProteineCategorie } from "@/types";
+import { compterPoissonReel } from "@/lib/ai/validation";
 import { MOROCCAN_RECIPES } from "@/data/recipes";
 import {
   PETIT_DEJ_OPTIONS,
@@ -151,6 +152,7 @@ export function buildRegenerateMealPrompt(
   mealIndex: number,
   locale: Locale,
   form: PatientForm,
+  proteineImposee?: string,
 ): string {
   const lang = locale === "ar" ? "arabe (arabe médical professionnel)" : "français";
   const contraintes = buildPatientConstraints(form);
@@ -161,7 +163,7 @@ export function buildRegenerateMealPrompt(
   const type = repas.type.toLowerCase();
   let regleRepas = "";
   if (type.includes("petit")) {
-    regleRepas = "C'est un PETIT-DÉJEUNER : glucides complexes (pain complet/orge/msemen/harcha) + protéine (œuf/fromage/yaourt) + bonnes graisses. AUCUN fruit. Pas d'avoine ni de quinoa.";
+    regleRepas = "C'est un PETIT-DÉJEUNER : glucides complexes (pain complet/orge/msemen/harcha/belboula) + protéine (œuf/fromage frais/fromage blanc nature) + bonnes graisses (avocat/olives/huile d'olive). AUCUN fruit, AUCUNE compote, AUCUN dessert, AUCUN yaourt aux fruits ni laitage sucré. Pas d'avoine ni de quinoa.";
   } else if (type.includes("déjeuner") || type.includes("dejeuner")) {
     const diner = jour.repas.find((r) => {
       const tt = r.type.toLowerCase();
@@ -183,6 +185,10 @@ export function buildRegenerateMealPrompt(
       ? "C'est le déjeuner du vendredi : le couscous est autorisé."
       : "Pas de couscous (réservé au déjeuner du vendredi).";
 
+  const proteineNote = proteineImposee
+    ? `\nPROTÉINE IMPOSÉE (OBLIGATOIRE, AUCUNE EXCEPTION) : ${proteineImposee}.`
+    : "";
+
   return `LANGUE DE RÉPONSE : ${lang}.${contraintes}
 
 Jour « ${jour.jour} » — tu dois RÉGÉNÉRER UNIQUEMENT le repas « ${repas.type} » (~${repas.calories} kcal).
@@ -194,7 +200,7 @@ AUTRES REPAS DU JOUR (NE PAS répéter leurs plats/protéines) :
 ${JSON.stringify(autresRepas)}
 
 ${regleRepas}
-${couscousNote}
+${couscousNote}${proteineNote}
 Vise environ ${repas.calories} kcal. Propose un plat marocain sain RÉELLEMENT DIFFÉRENT de l'actuel et des autres repas du jour.
 
 Réponds STRICTEMENT avec ce JSON (UN seul repas) :
@@ -256,11 +262,18 @@ Formule chaque plat de façon SIMPLE et DIRECTE, comme une ORDONNANCE NUTRITIONN
 
 == STRUCTURE OBLIGATOIRE DU PETIT-DÉJEUNER ==
 Le petit-déjeuner ne doit JAMAIS se résumer à un yaourt + un fruit. Il DOIT contenir :
-1. Glucides complexes : pain complet, pain d'orge, msemen complet (à l'huile d'olive), harcha complète, baghrir complet ou autre céréale complète marocaine. (N'utilise PAS de flocons d'avoine ni de quinoa.)
-2. Protéines : œufs, yaourt nature, fromage frais, lait ou fromage blanc.
-3. Bonnes graisses : amandes, noix, graines ou huile d'olive.
-INTERDIT au petit-déjeuner : AUCUN fruit ni dessert. Les fruits/desserts sont réservés au DÉJEUNER. Tu peux ajouter une boisson chaude (thé/café sans sucre) ou des olives.
-Objectif : repas rassasiant et équilibré, sans fruit.
+1. Glucides complexes : pain complet, pain d'orge, msemen complet (à l'huile d'olive), harcha complète, baghrir complet, belboula d'orge ou autre céréale complète marocaine. (N'utilise PAS de flocons d'avoine ni de quinoa.)
+2. Protéines : œufs, fromage frais, fromage blanc nature (non sucré).
+3. Bonnes graisses : amandes, noix, graines, huile d'olive, avocat ou olives.
+
+ALIMENTS AUTORISÉS au petit-déjeuner UNIQUEMENT : œufs, avocat, pain complet, pain d'orge, belboula, fromage frais, fromage blanc nature, olives, huile d'olive, thé, café, infusion.
+
+RÈGLE ABSOLUE — INTERDIT au petit-déjeuner (AUCUNE EXCEPTION) :
+- AUCUN fruit, sous quelque forme que ce soit (frais, séché, en jus, en compote).
+- AUCUNE compote, salade de fruits, ou dessert.
+- AUCUN yaourt aux fruits, ni laitage sucré (yaourt sucré, yaourt aromatisé, crème dessert, etc.).
+Les fruits et desserts sont réservés EXCLUSIVEMENT au DÉJEUNER (1 portion en fin de repas).
+Objectif : repas rassasiant et équilibré, sans aucune trace de fruit ou de sucre ajouté.
 
 == STRUCTURE OBLIGATOIRE DU DÉJEUNER ET DU DÎNER (Tableau 8) ==
 RÈGLE ABSOLUE : le DÉJEUNER et le DÎNER de CHAQUE jour DOIVENT CHACUN contenir une source de protéine animale ou végétale clairement identifiée et chiffrée. Jamais un déjeuner ni un dîner sans protéine, même quand c'est une soupe ou une salade : dans ce cas, AJOUTE une protéine (poulet, viande hachée, thon, fromage en quantité protéique, pois chiches). ⚠️ L'ŒUF EST INTERDIT AU DÎNER (et au déjeuner) : l'œuf/l'omelette ne se met QU'AU PETIT-DÉJEUNER. N'utilise jamais d'œuf comme protéine du dîner ni du déjeuner.
@@ -274,7 +287,9 @@ Chaque repas principal DOIT contenir TOUS ces éléments (aucun omis sans justif
 Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité.
 
 == RÈGLES SPÉCIFIQUES SUPPLÉMENTAIRES ==
-- DÉJEUNER = repas PRINCIPAL de la journée (le plus complet et copieux). C'est le SEUL repas qui contient un FRUIT/DESSERT (1 portion en fin de repas). Aucun fruit ailleurs (ni petit-déjeuner, ni dîner).
+- DÉJEUNER = repas PRINCIPAL de la journée (le plus complet et copieux). RÈGLE ABSOLUE : le déjeuner DOIT contenir EXACTEMENT 1 portion de fruit en dessert (ni 0, ni 2). C'est le SEUL repas de la journée qui contient un fruit ou un dessert.
+- DÎNER : RÈGLE ABSOLUE — AUCUN fruit, AUCUNE compote, AUCUN dessert, AUCUN laitage sucré. Le dîner se termine sur la protéine + légumes/féculent, sans rien de sucré après.
+- PETIT-DÉJEUNER : RÈGLE ABSOLUE — AUCUN fruit, AUCUNE compote, AUCUN dessert, AUCUN yaourt aux fruits ni laitage sucré (cf. section dédiée ci-dessus).
 - RÈGLE CALORIQUE ABSOLUE ET NON NÉGOCIABLE : les calories du DÉJEUNER doivent TOUJOURS être SUPÉRIEURES à celles du DÎNER (déjeuner > dîner), CHAQUE jour, sans exception. Le déjeuner est le repas le plus calorique de la journée, le dîner reste plus léger. Avant de répondre, vérifie pour chaque jour que calories(déjeuner) > calories(dîner) ; si ce n'est pas le cas, ajuste les portions pour que le déjeuner repasse au-dessus du dîner.
 - POISSON (l7out) : 2 repas/semaine MAXIMUM, et UNIQUEMENT au DÉJEUNER. JAMAIS de poisson au dîner ni au petit-déjeuner.
 - LENTILLES (l3dess) : 1 à 2 fois/semaine MAXIMUM, et UNIQUEMENT en ACCOMPAGNEMENT (jamais comme plat principal). Le plat principal protéique doit être une viande/volaille/poisson/œufs, pas les lentilles.
@@ -282,7 +297,7 @@ Huile d'olive pour la cuisson, huile de colza pour l'assaisonnement. Sel limité
 - ŒUFS / OMELETTE / ŒUFS BROUILLÉS / ŒUFS DURS : UNIQUEMENT au PETIT-DÉJEUNER. RÈGLE STRICTE ET NON NÉGOCIABLE : JAMAIS d'œuf au déjeuner, JAMAIS d'œuf au dîner, sous aucune forme. L'œuf n'apparaît que dans le petit-déjeuner.
 - Ne JAMAIS utiliser de quinoa ni de flocons d'avoine.
 
-RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient une protéine (œufs, yaourt, fromage, lait) et une source de glucides complexes (pain complet, pain d'orge, msemen complet, harcha complète), SANS fruit. N'utilise JAMAIS de flocons d'avoine ni de quinoa.
+RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain complet DOIVENT apparaître explicitement dans la liste des ingrédients avec leur quantité en grammes. Le petit-déjeuner contient une protéine (œufs, fromage frais, fromage blanc nature) et une source de glucides complexes (pain complet, pain d'orge, msemen complet, harcha complète, belboula), SANS fruit ni dessert ni laitage sucré. N'utilise JAMAIS de flocons d'avoine ni de quinoa.
 
 == REPÈRES PNNS (Tableau 6) ==
 - Fruits et légumes : au moins 5 portions/jour.
@@ -298,7 +313,7 @@ RÈGLE D'AFFICHAGE : pour CHAQUE repas, la source de protéine et le pain comple
 
 == ORGANISATION HEBDOMADAIRE (programme sur une semaine) ==
 PROTÉINES :
-- Poisson : 2 fois/semaine MAX (gras : sardines/maquereau, ou blanc), de préférence au DÉJEUNER, à éviter au dîner.
+- Poisson : EXACTEMENT 2 fois/semaine (ni 0, ni 1, ni 3+), gras (sardines/maquereau) ou blanc, UNIQUEMENT au DÉJEUNER — JAMAIS au petit-déjeuner ni au dîner.
 - Viande rouge : 2 repas/semaine MAX, de préférence au DÉJEUNER, à éviter au dîner.
 - Les autres jours : privilégier volaille (poulet, dinde), œufs, légumineuses, thon — la MAJORITÉ des repas protéiques.
 - Alterner les protéines : jamais le même type deux jours de suite.
@@ -340,13 +355,18 @@ Les recommandations doivent être prudentes, réalistes, personnalisées et adap
 ✓ Régime méditerranéen respecté
 ✓ Au moins 5 portions de fruits/légumes par jour
 ✓ 3 produits laitiers par jour
-✓ Poisson ≥ 2 fois/semaine
-✓ Petit-déjeuner complet (glucides complexes + protéines + fruit + bonnes graisses)
+✓ Poisson EXACTEMENT 2 fois/semaine (ni 0, ni 1, ni 3+), au déjeuner uniquement
+✓ Petit-déjeuner complet (glucides complexes + protéines + bonnes graisses, SANS fruit ni dessert)
 ✓ Déjeuner complet (les 6 éléments)
 ✓ Dîner complet (les 6 éléments)
 ✓ Calories de chaque repas cohérentes avec les quantités
 ✓ Calories du DÉJEUNER strictement SUPÉRIEURES à celles du DÎNER (déjeuner > dîner) CHAQUE jour
 ✓ AUCUN œuf au déjeuner ni au dîner (œuf = petit-déjeuner uniquement) ; aucun poisson au dîner
+✓ AUCUN fruit au petit-déjeuner
+✓ AUCUN dessert au petit-déjeuner (compote, salade de fruits, yaourt aux fruits, laitage sucré)
+✓ AUCUN fruit au dîner
+✓ AUCUN dessert au dîner
+✓ EXACTEMENT 1 portion de fruit au déjeuner (ni 0, ni 2)
 ✓ Macros cohérentes (P 11-15 %, G 50-55 %, L 35-40 %)
 ✓ Formulation simple type ordonnance (pas de noms de recettes élaborés, pas d'effet "restaurant")
 Si une règle n'est pas respectée, CORRIGE automatiquement le menu avant de produire le résultat.
@@ -550,14 +570,33 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+const JOURS_SEMAINE = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+/** Jours où le déjeuner peut être du poisson (vendredi = couscous fixe, exclu). */
+const JOURS_NON_VENDREDI = ["lundi", "mardi", "mercredi", "jeudi", "samedi", "dimanche"];
+
+/** Catégorie de la protéine du déjeuner d'un jour déjà généré (fallback "autre" si absent). */
+export function categorieDejeuner(jour: DailyMealPlan): ProteineCategorie {
+  const dejeuner = jour.repas.find(
+    (r) => r.type.toLowerCase().includes("déjeuner") && !r.type.toLowerCase().includes("petit"),
+  );
+  return dejeuner?.categorieProteine ?? "autre";
+}
+
 /**
- * Contraintes d'un jour. La PROTÉINE du déjeuner respecte des quotas FIXES par
- * jour (poisson Mer+Dim, viande rouge Jeu, vendredi couscous) pour garantir
- * poisson ≤2/sem et viande rouge ≤2/sem. Le reste (dîner, féculent, petit-déj)
- * est tiré ALÉATOIREMENT à chaque génération → deux programmes ne se ressemblent pas.
+ * Contraintes d'un jour. La PROTÉINE du déjeuner est choisie SERVEUR-SIDE dans un
+ * POOL autorisé, filtré par les quotas hebdomadaires déjà consommés (déduits du
+ * contenu RÉEL des déjeuners déjà générés via `compterPoissonReel`) :
+ * poisson EXACTEMENT 2/sem (jamais 0, jamais 1, jamais 3+ — forcé en fin de
+ * semaine si nécessaire, interdit une fois le quota atteint), viande rouge
+ * ≤2/sem, vendredi = couscous fixe (règle absolue). `lunchCategorie` permet à
+ * l'appelant (route.ts) de tague le repas généré sans dépendre de l'IA.
+ * Le reste (dîner, féculent, petit-déj) est tiré ALÉATOIREMENT à chaque
+ * génération → deux semaines/patients ne se ressemblent jamais.
  */
-export function dayRole(jourNom: string): {
+export function dayRole(jourNom: string, historyJours: DailyMealPlan[] = []): {
   lunch: string;
+  lunchCategorie: ProteineCategorie;
   dinner: string;
   breakfast: string;
   starch: string;
@@ -565,16 +604,57 @@ export function dayRole(jourNom: string): {
 } {
   const j = jourNom.toLowerCase();
 
-  // Protéine du déjeuner : fixée pour respecter les quotas hebdomadaires.
-  const LUNCH_PROTEINE: Record<string, string> = {
-    lundi: "volaille (poulet OU dinde, grillé/au four/en tajine léger)",
-    mardi: "poisson (sardines, maquereau, thon OU merlan) — 1er des 2 jours poisson",
-    mercredi: "volaille OU escalope de poulet/dinde",
-    jeudi: "viande rouge maigre (steak, viande hachée OU brochettes) — jour viande rouge",
-    vendredi: "couscous marocain (vendredi)",
-    samedi: "poisson (2e jour poisson) OU volaille en tajine",
-    dimanche: "plat familial élaboré (tajine de poulet/dinde, rfissa allégée OU viande)",
-  };
+  let lunchProteine: string;
+  let lunchCategorie: ProteineCategorie;
+
+  if (j === "vendredi") {
+    // Vendredi = couscous fixe (règle absolue, inchangée).
+    lunchProteine = "couscous marocain (vendredi)";
+    lunchCategorie = "couscous";
+  } else {
+    const categories = historyJours.map(categorieDejeuner);
+    const viandeRougeUtilisee = categories.filter((c) => c === "viande_rouge").length;
+
+    // Quota poisson EXACT (2/semaine, ni plus ni moins) calculé sur le contenu
+    // RÉEL des déjeuners déjà générés (pas seulement categorieProteine, qui
+    // peut diverger si l'IA ajoute du poisson hors plan — cf. validation.ts).
+    const poissonUtilise = compterPoissonReel(historyJours);
+    const POISSON_OBJECTIF = 2;
+    const manquant = POISSON_OBJECTIF - poissonUtilise;
+
+    const positionAujourdhui = JOURS_NON_VENDREDI.indexOf(j); // 0..5 (vendredi exclu)
+    const restantsApresAujourdhui = JOURS_NON_VENDREDI.length - 1 - positionAujourdhui;
+
+    // Pool de protéines autorisées pour le déjeuner, filtré par quotas restants.
+    const pool: { label: string; categorie: ProteineCategorie }[] = [
+      { label: "volaille (poulet, grillé ou au four)", categorie: "volaille" },
+      { label: "volaille (dinde ou escalope de dinde, grillée)", categorie: "volaille" },
+      { label: "escalope de poulet grillée", categorie: "volaille" },
+    ];
+    if (manquant > 0) {
+      pool.push({ label: "poisson (sardines, maquereau, thon, merlan, saumon ou cabillaud)", categorie: "poisson" });
+    }
+    if (viandeRougeUtilisee < 2) {
+      pool.push({ label: "viande rouge maigre (steak, viande hachée ou brochettes)", categorie: "viande_rouge" });
+    }
+
+    const poissonDispo = pool.find((p) => p.categorie === "poisson");
+    // Poisson FORCÉ : s'il manque autant (ou plus) de poisson que de jours
+    // restants, aujourd'hui DOIT être un repas poisson pour garantir EXACTEMENT 2/semaine.
+    if (manquant > 0 && manquant >= restantsApresAujourdhui + 1 && poissonDispo) {
+      lunchProteine = `${poissonDispo.label} — OBLIGATOIRE aujourd'hui pour atteindre EXACTEMENT 2 repas poisson cette semaine`;
+      lunchCategorie = "poisson";
+    } else if (manquant <= 0) {
+      // Quota déjà atteint : poisson INTERDIT le reste de la semaine.
+      const choix = pick(pool.filter((p) => p.categorie !== "poisson"));
+      lunchProteine = choix.label;
+      lunchCategorie = choix.categorie;
+    } else {
+      const choix = pick(pool);
+      lunchProteine = choix.label;
+      lunchCategorie = choix.categorie;
+    }
+  }
 
   // Petit-déjeuner : base aléatoire, formulation simple façon ordonnance (sans fruit).
   const breakfast = pick([
@@ -604,7 +684,8 @@ export function dayRole(jourNom: string): {
 
   const role = {
     breakfast: `${breakfast} (sans fruit)`,
-    lunch: `${LUNCH_PROTEINE[j] ?? "volaille"} + 1 fruit en dessert`,
+    lunch: `${lunchProteine} + 1 fruit en dessert`,
+    lunchCategorie,
     dinner,
     starch,
   };
@@ -627,6 +708,7 @@ export function buildSingleDayPrompt(
   jourNom: string,
   autresJours: string[],
   historyJours: DailyMealPlan[] = [],
+  role: ReturnType<typeof dayRole> | null = null,
 ): string {
   const repasStruct = form.modeRamadan
     ? `"type" parmi : "Ftour", "Collation après Tarawih", "Shour"`
@@ -658,12 +740,8 @@ export function buildSingleDayPrompt(
       });
     });
 
-    const poissonCount = historyJours.filter((j) =>
-      j.repas.some((r) => {
-        const nom = r.nom.toLowerCase();
-        return nom.includes("poisson") || nom.includes("sardine") || nom.includes("maquereau") || nom.includes("merlan") || nom.includes("thon") || nom.includes("saumon");
-      })
-    ).length;
+    const poissonCount = compterPoissonReel(historyJours);
+    const viandeRougeCount = historyJours.filter((j) => categorieDejeuner(j) === "viande_rouge").length;
 
     const lentillesCount = historyJours.filter((j) =>
       j.repas.some((r) => r.ingredients?.some((i) => i.nom.toLowerCase().includes("lentille")))
@@ -675,7 +753,8 @@ MÉMOIRE DE LA SEMAINE (jours déjà générés — NE PAS RÉPÉTER les mêmes 
 Déjeuners déjà utilisés (protéines) : ${proteinesUsees.join(" | ") || "aucun"}
 Petits-déjeuners déjà utilisés : ${petitDejUsees.join(" | ") || "aucun"}
 Dîners déjà utilisés : ${dinerUsees.join(" | ") || "aucun"}
-Poisson utilisé : ${poissonCount}/2 fois cette semaine${poissonCount >= 2 ? " → INTERDIT d'utiliser du poisson ce jour" : " → encore autorisé si le rôle du jour l'indique"}.
+Poisson utilisé : ${poissonCount}/2 fois cette semaine (objectif EXACT : 2, ni plus ni moins)${poissonCount >= 2 ? " → INTERDIT d'utiliser du poisson ce jour" : " → encore autorisé/obligatoire si le rôle du jour l'indique"}.
+Viande rouge utilisée : ${viandeRougeCount}/2 fois cette semaine.
 Lentilles utilisées : ${lentillesCount}/2 fois cette semaine${lentillesCount >= 2 ? " → INTERDIT d'utiliser des lentilles ce jour" : ""}.
 
 RÈGLE ABSOLUE : le menu de « ${jourNom} » doit être ENTIÈREMENT DIFFÉRENT de tous les jours ci-dessus (aucun plat, aucun petit-déjeuner, aucun dîner identique).`;
@@ -688,7 +767,8 @@ RÈGLE ABSOLUE : le menu de « ${jourNom} » doit être ENTIÈREMENT DIFFÉRENT 
 
   // Contraintes du jour (type de protéine + rythme), SANS imposer les plats exacts
   // → laisse à l'IA la liberté de varier réellement à chaque génération.
-  const role = autresJours.length > 0 ? dayRole(jourNom) : null;
+  // `role` est calculé UNE SEULE FOIS par l'appelant (route.ts) et réutilisé
+  // pour le stamping de categorieProteine → cohérence garantie.
   const roleGuidance = role
     ? `\n\nCONTRAINTES DE CE JOUR (à respecter, mais COMPOSE librement les plats — varie le style, les recettes, les légumes, les modes de cuisson) :
 - Déjeuner : ${role.lunch} (tu peux choisir une recette marocaine différente avec cette protéine).
