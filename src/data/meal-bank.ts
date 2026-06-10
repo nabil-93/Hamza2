@@ -49,16 +49,19 @@ export const DINER_OPTIONS = [
 
 /** Légumes autorisés (consommés cuits ou crus). */
 export const LEGUMES_AUTORISES = [
-  "artichaut", "betterave", "carotte", "brocoli", "champignon", "poireau",
-  "poivron (vert, jaune, rouge)", "laitue", "tomate", "aubergine",
-  "chou (blanc, vert, rouge, frisé)", "chou-fleur", "chou de Bruxelles",
+  "artichaut", "betterave crue", "carotte crue", "brocoli", "champignon", "poireau",
+  "poivron (vert, jaune, rouge)", "salade (laitue...)", "tomate", "aubergine",
+  "chou (blanc, vert, rouge, pommé, frisé)", "chou-fleur", "chou de Bruxelles",
   "concombre", "courgette", "épinard", "fenouil", "haricot vert", "navet", "radis",
 ];
 
-/** Féculents complets autorisés (petites portions). */
+/**
+ * Féculent complémentaire du déjeuner (2e portion, EN PLUS du pain complet 50 g
+ * de base) : soit un 2e morceau de pain complet 50 g, soit 100 g de riz/pâtes/
+ * pomme de terre. JAMAIS de boulgour (retiré de la banque).
+ */
 export const FECULENTS_AUTORISES = [
-  "pain complet (50 g)", "riz complet (100 g)", "pâtes complètes (100 g)",
-  "pomme de terre (100 g)", "semoule complète", "pain d'orge", "boulgour", "patate douce",
+  "pain complet (50 g)", "riz complet (100 g)", "pâtes complètes (100 g)", "pomme de terre (100 g)",
 ];
 
 /** Aliments INTERDITS (à reproduire dans la section recommandations). */
