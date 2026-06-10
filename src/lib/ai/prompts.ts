@@ -244,6 +244,16 @@ La répartition énergétique de CHAQUE jour DOIT IMPÉRATIVEMENT respecter ces 
 - Lipides : 35 à 40 % (privilégier huiles végétales olive/colza, AG mono-insaturés ; limiter AG saturés).
 C'est l'exigence prioritaire : ajuste les quantités (féculents, huile, protéines) pour que chaque jour tombe EXACTEMENT dans ces bornes. Un jour hors de ces fourchettes est une erreur à corriger.
 
+== STYLE DE FORMULATION DES PLATS — PRIORITÉ ÉLEVÉE, NON NÉGOCIABLE ==
+Formule chaque plat de façon SIMPLE et DIRECTE, comme une ORDONNANCE NUTRITIONNELLE marocaine, JAMAIS comme une carte de restaurant.
+- Utilise des noms d'aliments courants avec leur quantité, jamais des noms de recettes sophistiqués.
+- Exemples de formulation OBLIGATOIRE :
+  • Petit-déjeuner : « 1 œuf au plat + pain complet + huile d'olive » / « ¼ avocat + pain complet » / « belboula d'orge + pain complet »
+  • Déjeuner : « Salade de crudités + 150 g de poulet + riz complet + 1 fruit »
+  • Dîner : « Soupe de légumes + 150 g de poulet » / « Légumes au four + 150 g de dinde » / « Légumes sautés + 150 g de viande maigre »
+- ÉVITE STRICTEMENT les noms de plats élaborés ou les recettes à étapes multiples (ex. évite « tajine mijoté aux épices », « velouté onctueux », « chorba traditionnelle »). Préfère « légumes au four », « légumes sautés », « soupe de légumes ».
+- Le champ "nom" de chaque repas doit rester COURT et descriptif (ex. « Salade + poulet grillé + riz complet »), jamais un titre de recette de chef.
+
 == STRUCTURE OBLIGATOIRE DU PETIT-DÉJEUNER ==
 Le petit-déjeuner ne doit JAMAIS se résumer à un yaourt + un fruit. Il DOIT contenir :
 1. Glucides complexes : pain complet, pain d'orge, msemen complet (à l'huile d'olive), harcha complète, baghrir complet ou autre céréale complète marocaine. (N'utilise PAS de flocons d'avoine ni de quinoa.)
@@ -294,12 +304,11 @@ PROTÉINES :
 - Alterner les protéines : jamais le même type deux jours de suite.
 
 DÎNERS :
-- Soupes ≈ 2 fois/semaine au dîner (harira légère, soupe de légumes, chorba légère, velouté), accompagnées d'une protéine ou d'un produit laitier.
+- Soupes ≈ 2 fois/semaine au dîner (soupe de légumes, harira légère), toujours accompagnées d'une protéine.
 
 RYTHME PROFESSIONNEL :
-- Déjeuners du LUNDI au VENDREDI : RAPIDES (< 30 min), simples — salades complètes, poulet/dinde grillé, omelette, thon-crudités, légumineuses simples, poisson grillé rapide, bowls, sandwichs équilibrés. ÉVITER tajines longs et plats à cuisson prolongée.
-- SAMEDI et DIMANCHE : plats traditionnels marocains plus élaborés autorisés (tajines, rfissa allégée, harira traditionnelle allégée, plats familiaux).
-- Le programme doit être réaliste pour une personne active qui travaille.
+- TOUS LES JOURS de la semaine (y compris week-end) : menus SIMPLES et RAPIDES, format constant — salade/légumes + protéine (150 g) + petit féculent + pain complet (+ fruit au déjeuner). Pas de plats à cuisson prolongée ni de recettes à étapes multiples.
+- Le programme doit ressembler à une ordonnance nutritionnelle (liste d'aliments et de portions), pas à une carte de restaurant.
 
 == RÉGIMES SPÉCIFIQUES (à appliquer selon le profil) ==
 - Méditerranéen : régime de référence à privilégier (huile d'olive, légumes, légumineuses, poisson, fruits à coque, peu de viande rouge).
@@ -339,6 +348,7 @@ Les recommandations doivent être prudentes, réalistes, personnalisées et adap
 ✓ Calories du DÉJEUNER strictement SUPÉRIEURES à celles du DÎNER (déjeuner > dîner) CHAQUE jour
 ✓ AUCUN œuf au déjeuner ni au dîner (œuf = petit-déjeuner uniquement) ; aucun poisson au dîner
 ✓ Macros cohérentes (P 11-15 %, G 50-55 %, L 35-40 %)
+✓ Formulation simple type ordonnance (pas de noms de recettes élaborés, pas d'effet "restaurant")
 Si une règle n'est pas respectée, CORRIGE automatiquement le menu avant de produire le résultat.
 
 IMPORTANT : Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sans balises markdown. Respecte exactement le schéma demandé.`;
@@ -566,28 +576,24 @@ export function dayRole(jourNom: string): {
     dimanche: "plat familial élaboré (tajine de poulet/dinde, rfissa allégée OU viande)",
   };
 
-  // Petit-déjeuner : base aléatoire parmi plusieurs styles marocains (sans fruit).
+  // Petit-déjeuner : base aléatoire, formulation simple façon ordonnance (sans fruit).
   const breakfast = pick([
-    "pain complet + œuf + fromage frais + huile d'olive",
-    "pain d'orge + fromage blanc + 1 œuf dur + olives",
-    "msemen complet + fromage frais + amandes + thé sans sucre",
-    "baghrir complet + miel léger + yaourt nature + noix",
-    "harcha complète + fromage frais + huile d'olive",
-    "rghaif complet + œuf + yaourt nature + graines",
-    "pain complet + ¼ avocat + 1 œuf + olives",
-    "bol de belboula d'orge + fromage frais + amandes",
+    "1 œuf au plat ou omelette + pain complet + huile d'olive",
+    "¼ d'avocat + pain complet + huile d'olive",
+    "1 œuf dur + ¼ avocat + pain complet",
+    "bol de belboula d'orge cuite + pain complet",
+    "fromage frais + pain complet + huile d'olive",
+    "2 œufs durs + pain complet + huile d'olive",
   ]);
 
   // Dîner : tiré aléatoirement, TOUJOURS avec protéine (jamais d'œuf ni de poisson au dîner).
   const dinner = pick([
-    "soupe de légumes + 150 g de poulet émincé + produit laitier",
-    "soupe de légumes + 150 g de poulet émincé",
+    "soupe de légumes + 150 g de poulet",
+    "soupe de légumes + 150 g de viande hachée sans graisse",
     "légumes au four + 150 g de poulet",
     "légumes sautés + 150 g de dinde",
-    "tajine de légumes + 150 g de dinde",
-    "chorba légère + 150 g de poulet",
-    "velouté de légumes + 120 g de poulet + fromage",
-    "légumes vapeur + 150 g de blanc de dinde",
+    "légumes au four + 150 g de dinde",
+    "légumes sautés + 150 g de viande maigre",
   ]);
 
   // Féculent : tiré aléatoirement.
@@ -604,8 +610,8 @@ export function dayRole(jourNom: string): {
   };
   const weekend = j === "samedi" || j === "dimanche";
   const pace = weekend
-    ? "C'est le WEEK-END : un plat marocain plus élaboré est autorisé au déjeuner."
-    : "C'est un jour de SEMAINE (travail) : le déjeuner doit être RAPIDE à préparer (< 30 min), simple. Évite les tajines longs.";
+    ? "C'est le WEEK-END : garde la même formule simple (salade + protéine + féculent + fruit)."
+    : "C'est un jour de SEMAINE (travail) : le déjeuner doit être RAPIDE et simple (salade + protéine + féculent + fruit).";
   return { ...role, pace };
 }
 
@@ -728,7 +734,7 @@ Réponds STRICTEMENT avec ce JSON (UN seul jour) :
   ]
 }
 
-Pour CHAQUE ingrédient, indique son mode de préparation dans "preparation" : « cru », « cuit à la vapeur », « grillé », « bouilli », « poêlé à l'huile d'olive », « au four », « en salade (cru) », « mijoté », etc. Exemples : courgette → « cuite à la vapeur », tomate en salade → « crue », poulet → « grillé », œufs → « durs » ou « à la coque », pain → « complet ». Sois précis pour que le patient sache exactement comment préparer chaque aliment.
+Pour CHAQUE ingrédient, indique son mode de préparation dans "preparation" avec un terme SIMPLE et COURT (1-2 mots) : « cru », « cuit à la vapeur », « grillé », « au four », « bouilli », « sauté », « dur », « complet », etc. Reste minimaliste, façon ordonnance nutritionnelle — pas de description de recette.
 
 Macros OBLIGATOIRES : Protéines 11-15 %, Glucides 50-55 %, Lipides 35-40 %.
 RÈGLE CALORIQUE ABSOLUE : les calories du DÉJEUNER doivent être SUPÉRIEURES à celles du DÎNER (déjeuner > dîner). Le déjeuner est le repas le plus copieux, le dîner reste plus léger. Vérifie ce point avant de répondre et ajuste les portions si besoin.
